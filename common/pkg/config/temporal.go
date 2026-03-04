@@ -43,6 +43,7 @@ func (tcfg *TemporalConfig) GetHostPort() string {
 	return fmt.Sprintf("%v:%v", tcfg.Host, tcfg.Port)
 }
 
+// Close cleans up TLS resources
 func (tcfg *TemporalConfig) Close() {
 	if tcfg.dynTLS != nil {
 		tcfg.dynTLS.Close()
@@ -62,7 +63,7 @@ func NewTemporalConfig(host string, port int, serverName string, namespace strin
 			return nil, err
 		}
 
-		baseTLSCfg := &tls.Config{
+		baseTLSCfg := &tls.Config{ //nolint:exhaustruct // only setting relevant TLS fields
 			ServerName:         fmt.Sprintf("%s.%s", cwfns.CloudNamespace, serverName),
 			MinVersion:         tls.VersionTLS12,
 			InsecureSkipVerify: false,
@@ -76,8 +77,8 @@ func NewTemporalConfig(host string, port int, serverName string, namespace strin
 		Port:          port,
 		Namespace:     namespace,
 		Queue:         queue,
-		EncryptionKey: encryptionKey,
 		ServerName:    serverName,
+		EncryptionKey: encryptionKey,
 		TLSEnabled:    tlsEnabled,
 		ClientTLSCfg:  clientTLSCfg,
 		dynTLS:        dynTLS,
