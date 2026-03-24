@@ -41,7 +41,7 @@ import (
 	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/util"
 
 	cwsv1 "github.com/NVIDIA/ncx-infra-controller-rest/workflow-schema/schema/site-agent/workflows/v1"
-	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/internal/config"
+	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/config"
 	cwm "github.com/NVIDIA/ncx-infra-controller-rest/workflow/internal/metrics"
 
 	"github.com/prometheus/client_golang/prometheus"

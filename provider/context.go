@@ -38,4 +38,19 @@ type ProviderContext struct {
 	// APIPathPrefix is the route prefix for API endpoints (e.g., "/org/:orgName/carbide").
 	// Set by the core before calling Init on API providers.
 	APIPathPrefix string
+
+	// TemporalNamespace is the Temporal namespace this worker operates in
+	// ("cloud" or "site"). Providers use this to register the appropriate
+	// workflows for the namespace.
+	TemporalNamespace string
+
+	// TemporalQueue is the Temporal task queue name.
+	TemporalQueue string
+
+	// WorkflowSiteClientPool is the workflow binary's site client pool.
+	// Typed as interface{} because the API and workflow binaries use
+	// different client pool types from different packages. Providers
+	// type-assert to *workflow/pkg/client/site.ClientPool when registering
+	// activities. Nil when running in the API binary.
+	WorkflowSiteClientPool interface{}
 }

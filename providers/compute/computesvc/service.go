@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package compute
+package computesvc
 
 import (
 	"context"
@@ -30,11 +30,9 @@ import (
 // Service defines the operations that other providers can use to interact
 // with compute entities. This is the cross-domain API contract.
 type Service interface {
-	// Instance operations
 	GetInstanceByID(ctx context.Context, tx *db.Tx, id uuid.UUID) (*cdbm.Instance, error)
 	GetInstances(ctx context.Context, tx *db.Tx, filter cdbm.InstanceFilterInput, page paginator.PageInput) ([]cdbm.Instance, int, error)
-
-	// Machine operations
+	GetAllocationsCount(ctx context.Context, tx *db.Tx, filter cdbm.AllocationFilterInput) (int, error)
 	GetMachineByID(ctx context.Context, tx *db.Tx, id string) (*cdbm.Machine, error)
 }
 
@@ -43,8 +41,8 @@ type SQLService struct {
 	dbSession *db.Session
 }
 
-// NewSQLService creates a new SQLService.
-func NewSQLService(dbSession *db.Session) *SQLService {
+// New creates a new SQLService.
+func New(dbSession *db.Session) *SQLService {
 	return &SQLService{dbSession: dbSession}
 }
 
@@ -56,6 +54,11 @@ func (s *SQLService) GetInstanceByID(ctx context.Context, tx *db.Tx, id uuid.UUI
 func (s *SQLService) GetInstances(ctx context.Context, tx *db.Tx, filter cdbm.InstanceFilterInput, page paginator.PageInput) ([]cdbm.Instance, int, error) {
 	dao := cdbm.NewInstanceDAO(s.dbSession)
 	return dao.GetAll(ctx, tx, filter, page, nil)
+}
+
+func (s *SQLService) GetAllocationsCount(ctx context.Context, tx *db.Tx, filter cdbm.AllocationFilterInput) (int, error) {
+	dao := cdbm.NewAllocationDAO(s.dbSession)
+	return dao.GetCount(ctx, tx, filter)
 }
 
 func (s *SQLService) GetMachineByID(ctx context.Context, tx *db.Tx, id string) (*cdbm.Machine, error) {

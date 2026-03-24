@@ -45,7 +45,7 @@ import (
 
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/internal/config"
+	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/config"
 
 	cwm "github.com/NVIDIA/ncx-infra-controller-rest/workflow/internal/metrics"
 	cwfh "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/health"
@@ -53,65 +53,26 @@ import (
 
 	sc "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/client/site"
 
-	machineActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/machine"
-	machineWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/machine"
-
-	vpcActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/vpc"
-	vpcWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/vpc"
-
-	subnetActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/subnet"
-	subnetWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/subnet"
-
-	instanceActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/instance"
-	instanceWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/instance"
-
+	// Core workflows (identity/tenancy — not domain providers)
+	tenantActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/tenant"
 	userActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/user"
+	tenantWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/tenant"
 	userWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/user"
 
-	siteActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/site"
+	// Metrics activities (require Prometheus registry, stay in main)
+	instanceActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/instance"
+	subnetActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/subnet"
+	vpcActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/vpc"
+
+	// Site workflow triggers (cron)
 	siteWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/site"
 
-	sshKeyGroupActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/sshkeygroup"
-	sshKeyGroupWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/sshkeygroup"
-
-	ibpActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/infinibandpartition"
-	ibpWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/infinibandpartition"
-
-	expectedMachineActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/expectedmachine"
-	expectedMachineWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/expectedmachine"
-
-	expectedPowerShelfActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/expectedpowershelf"
-	expectedPowerShelfWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/expectedpowershelf"
-
-	expectedSwitchActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/expectedswitch"
-	expectedSwitchWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/expectedswitch"
-
-	tenantActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/tenant"
-	tenantWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/tenant"
-
-	instanceTypeActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/instancetype"
-	instanceTypeWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/instancetype"
-
-	networkSecurityGroupActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/networksecuritygroup"
-	networkSecurityGroupWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/networksecuritygroup"
-
-	osImageActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/operatingsystem"
-	osImageWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/operatingsystem"
-
-	skuActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/sku"
-	skuWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/sku"
-
-	vpcPrefixActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/vpcprefix"
-	vpcPrefixWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/vpcprefix"
-
-	vpcPeeringActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/vpcpeering"
-	vpcPeeringWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/vpcpeering"
-
-	dpuExtensionServiceActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/dpuextensionservice"
-	dpuExtensionServiceWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/dpuextensionservice"
-
-	nvLinkLogicalPartitionActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/nvlinklogicalpartition"
-	nvLinkLogicalPartitionWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/nvlinklogicalpartition"
+	// Provider framework
+	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/compute"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/health"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/networking"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/site"
 )
 
 const (
@@ -238,177 +199,60 @@ func main() {
 
 	siteClientPool := sc.NewClientPool(tcfg)
 
-	log.Info().Str("Temporal Namespace", tcfg.Namespace).Msg("registering workflow and activities")
+	// Create provider registry and register providers
+	registry := provider.NewRegistry()
 
-	// Register workflows
-	if tcfg.Namespace == cwfn.CloudNamespace {
-		// Workflows triggered by Cloud services
-		// VPC workflows
-		w.RegisterWorkflow(vpcWorkflow.CreateVpc)
-		w.RegisterWorkflow(vpcWorkflow.DeleteVpc)
-
-		// Subnet workflows
-		w.RegisterWorkflow(subnetWorkflow.CreateSubnet)
-		w.RegisterWorkflow(subnetWorkflow.DeleteSubnet)
-
-		// Instance workflows
-		w.RegisterWorkflow(instanceWorkflow.CreateInstance)
-		w.RegisterWorkflow(instanceWorkflow.DeleteInstance)
-		w.RegisterWorkflow(instanceWorkflow.RebootInstance)
-
-		// ExpectedMachine workflows (none under Cloud namespace)
-
-		// User workflows
-		w.RegisterWorkflow(userWorkflow.UpdateUserFromNGC)
-		w.RegisterWorkflow(userWorkflow.UpdateUserFromNGCWithAuxiliaryID)
-
-		// Site workflows
-		w.RegisterWorkflow(siteWorkflow.DeleteSiteComponents)
-		w.RegisterWorkflow(siteWorkflow.MonitorHealthForAllSites)
-		w.RegisterWorkflow(siteWorkflow.CheckHealthForAllSites)
-		w.RegisterWorkflow(siteWorkflow.MonitorTemporalCertExpirationForAllSites)
-		w.RegisterWorkflow(siteWorkflow.MonitorSiteTemporalNamespaces)
-
-		// SSHKeyGroup workflows
-		w.RegisterWorkflow(sshKeyGroupWorkflow.SyncSSHKeyGroup)
-		w.RegisterWorkflow(sshKeyGroupWorkflow.DeleteSSHKeyGroup)
-
-		// InfiniBandPartition workflows
-		w.RegisterWorkflow(ibpWorkflow.CreateInfiniBandPartition)
-		w.RegisterWorkflow(ibpWorkflow.DeleteInfiniBandPartition)
-	} else if tcfg.Namespace == cwfn.SiteNamespace {
-		// Workflows triggered by Site Agent
-		// Machine Workflows
-		w.RegisterWorkflow(machineWorkflow.UpdateMachineInventory)
-
-		// VPC workflows
-		w.RegisterWorkflow(vpcWorkflow.UpdateVpcInfo)
-		w.RegisterWorkflow(vpcWorkflow.UpdateVpcInventory)
-
-		// Subnet workflows
-		w.RegisterWorkflow(subnetWorkflow.UpdateSubnetInfo)
-		w.RegisterWorkflow(subnetWorkflow.UpdateSubnetInventory)
-
-		// Instance workflows
-		w.RegisterWorkflow(instanceWorkflow.UpdateInstanceInfo)
-		w.RegisterWorkflow(instanceWorkflow.UpdateInstanceInventory)
-		w.RegisterWorkflow(instanceWorkflow.UpdateInstanceRebootInfo)
-
-		// Site workflows
-		w.RegisterWorkflow(siteWorkflow.UpdateAgentCertExpiry)
-
-		// SSHKeyGroup workflows
-		w.RegisterWorkflow(sshKeyGroupWorkflow.UpdateSSHKeyGroupInfo)
-		w.RegisterWorkflow(sshKeyGroupWorkflow.UpdateSSHKeyGroupInventory)
-
-		// InfiniBandPartition workflows
-		w.RegisterWorkflow(ibpWorkflow.UpdateInfiniBandPartitionInfo)
-		w.RegisterWorkflow(ibpWorkflow.UpdateInfiniBandPartitionInventory)
-
-		// Tenant workflow
-		w.RegisterWorkflow(tenantWorkflow.UpdateTenantInventory)
-
-		// InstanceType workflow
-		w.RegisterWorkflow(instanceTypeWorkflow.UpdateInstanceTypeInventory)
-
-		// NetworkSecurityGroup workflow
-		w.RegisterWorkflow(networkSecurityGroupWorkflow.UpdateNetworkSecurityGroupInventory)
-
-		// OS Image workflow
-		w.RegisterWorkflow(osImageWorkflow.UpdateOsImageInventory)
-
-		// VPC Prefix workflow
-		w.RegisterWorkflow(vpcPrefixWorkflow.UpdateVpcPrefixInventory)
-
-		// VPC Peering workflow
-		w.RegisterWorkflow(vpcPeeringWorkflow.UpdateVpcPeeringInventory)
-
-		// ExpectedMachine workflow
-		w.RegisterWorkflow(expectedMachineWorkflow.UpdateExpectedMachineInventory)
-
-		// ExpectedPowerShelf workflow
-		w.RegisterWorkflow(expectedPowerShelfWorkflow.UpdateExpectedPowerShelfInventory)
-
-		// ExpectedSwitch workflow
-		w.RegisterWorkflow(expectedSwitchWorkflow.UpdateExpectedSwitchInventory)
-
-		// SKU workflow
-		w.RegisterWorkflow(skuWorkflow.UpdateSkuInventory)
-
-		// DPU Extension Service workflow
-		w.RegisterWorkflow(dpuExtensionServiceWorkflow.UpdateDpuExtensionServiceInventory)
-
-		// NVLink Logical Partition workflow
-		w.RegisterWorkflow(nvLinkLogicalPartitionWorkflow.UpdateNVLinkLogicalPartitionInventory)
+	if err := registry.Register(networking.New()); err != nil {
+		log.Panic().Err(err).Msg("failed to register networking provider")
+	}
+	if err := registry.Register(compute.New()); err != nil {
+		log.Panic().Err(err).Msg("failed to register compute provider")
+	}
+	if err := registry.Register(site.New()); err != nil {
+		log.Panic().Err(err).Msg("failed to register site provider")
+	}
+	if err := registry.Register(health.New()); err != nil {
+		log.Panic().Err(err).Msg("failed to register health provider")
 	}
 
-	// Register activities
-	// Common activities
-	machineManager := machineActivity.NewManageMachine(dbSession, siteClientPool)
-	w.RegisterActivity(&machineManager)
+	if err := registry.ResolveDependencies(); err != nil {
+		log.Panic().Err(err).Msg("failed to resolve provider dependencies")
+	}
 
-	vpcManager := vpcActivity.NewManageVpc(dbSession, siteClientPool, tc)
-	w.RegisterActivity(&vpcManager)
+	if err := registry.InitAll(provider.ProviderContext{
+		DB:                     dbSession,
+		Temporal:               tc,
+		Config:                 cfg,
+		Registry:               registry,
+		TemporalNamespace:      tcfg.Namespace,
+		TemporalQueue:          tcfg.Queue,
+		WorkflowSiteClientPool: siteClientPool,
+	}); err != nil {
+		log.Panic().Err(err).Msg("failed to initialize providers")
+	}
 
-	subnetManager := subnetActivity.NewManageSubnet(dbSession, siteClientPool, tc)
-	w.RegisterActivity(&subnetManager)
+	log.Info().Str("Temporal Namespace", tcfg.Namespace).Msg("registering workflow and activities")
 
-	instanceManager := instanceActivity.NewManageInstance(dbSession, siteClientPool, tc, cfg)
-	w.RegisterActivity(&instanceManager)
+	// Register provider workflows and activities
+	for _, wp := range registry.WorkflowProviders() {
+		wp.RegisterWorkflows(w)
+		wp.RegisterActivities(w)
+		log.Info().Str("provider", wp.Name()).Msg("registered provider workflows and activities")
+	}
 
-	siteManager := siteActivity.NewManageSite(dbSession, siteClientPool, tc, cfg)
-	w.RegisterActivity(&siteManager)
+	// Register core workflows (identity/tenancy — not domain providers)
+	if tcfg.Namespace == cwfn.CloudNamespace {
+		w.RegisterWorkflow(userWorkflow.UpdateUserFromNGC)
+		w.RegisterWorkflow(userWorkflow.UpdateUserFromNGCWithAuxiliaryID)
+	} else if tcfg.Namespace == cwfn.SiteNamespace {
+		w.RegisterWorkflow(tenantWorkflow.UpdateTenantInventory)
+	}
 
-	sshKeyGroupManager := sshKeyGroupActivity.NewManageSSHKeyGroup(dbSession, siteClientPool)
-	w.RegisterActivity(&sshKeyGroupManager)
-
-	ibpManager := ibpActivity.NewManageInfiniBandPartition(dbSession, siteClientPool)
-	w.RegisterActivity(&ibpManager)
-
+	// Register core activities
 	tenantManager := tenantActivity.NewManageTenant(dbSession, siteClientPool)
 	w.RegisterActivity(&tenantManager)
 
-	instanceTypeManager := instanceTypeActivity.NewManageInstanceType(dbSession, siteClientPool)
-	w.RegisterActivity(&instanceTypeManager)
-
-	networkSecurityGroupManager := networkSecurityGroupActivity.NewManageNetworkSecurityGroup(dbSession, siteClientPool)
-	w.RegisterActivity(&networkSecurityGroupManager)
-
-	osImageManager := osImageActivity.NewManageOsImage(dbSession, siteClientPool)
-	w.RegisterActivity(&osImageManager)
-
-	vpcPrefixManager := vpcPrefixActivity.NewManageVpcPrefix(dbSession, siteClientPool)
-	w.RegisterActivity(&vpcPrefixManager)
-
-	vpcPeeringManager := vpcPeeringActivity.NewManageVpcPeering(dbSession, siteClientPool)
-	w.RegisterActivity(&vpcPeeringManager)
-
-	// ExpectedMachine activities
-	expectedMachineManager := expectedMachineActivity.NewManageExpectedMachine(dbSession, siteClientPool)
-	w.RegisterActivity(&expectedMachineManager)
-
-	// ExpectedPowerShelf activities
-	expectedPowerShelfManager := expectedPowerShelfActivity.NewManageExpectedPowerShelf(dbSession, siteClientPool)
-	w.RegisterActivity(&expectedPowerShelfManager)
-
-	// ExpectedSwitch activities
-	expectedSwitchManager := expectedSwitchActivity.NewManageExpectedSwitch(dbSession, siteClientPool)
-	w.RegisterActivity(&expectedSwitchManager)
-
-	// SKU activities
-	skuManager := skuActivity.NewManageSku(dbSession, siteClientPool)
-	w.RegisterActivity(&skuManager)
-
-	// DPU Extension Service activities
-	dpuExtensionServiceManager := dpuExtensionServiceActivity.NewManageDpuExtensionService(dbSession, siteClientPool)
-	w.RegisterActivity(&dpuExtensionServiceManager)
-
-	// NVLink Logical Partition activities
-	nvLinkLogicalPartitionManager := nvLinkLogicalPartitionActivity.NewManageNVLinkLogicalPartition(dbSession, siteClientPool)
-	w.RegisterActivity(&nvLinkLogicalPartitionManager)
-
 	if tcfg.Namespace == cwfn.CloudNamespace {
-		// User activities
 		userManager := userActivity.NewManageUser(dbSession, cfg)
 		w.RegisterActivity(&userManager)
 	}

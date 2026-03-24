@@ -35,7 +35,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/internal/config"
+	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/util"
 
 	"os"

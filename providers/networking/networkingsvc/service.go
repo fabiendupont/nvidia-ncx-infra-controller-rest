@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package networking
+package networkingsvc
 
 import (
 	"context"
@@ -30,17 +30,10 @@ import (
 // Service defines the operations that other providers can use to interact
 // with networking entities. This is the cross-domain API contract.
 type Service interface {
-	// VPC operations
 	GetVpcByID(ctx context.Context, tx *db.Tx, id uuid.UUID) (*cdbm.Vpc, error)
 	GetVpcs(ctx context.Context, tx *db.Tx, filter cdbm.VpcFilterInput, page paginator.PageInput) ([]cdbm.Vpc, int, error)
-
-	// Subnet operations
 	GetSubnetByID(ctx context.Context, tx *db.Tx, id uuid.UUID) (*cdbm.Subnet, error)
-
-	// NetworkSecurityGroup operations
 	GetNetworkSecurityGroupByID(ctx context.Context, tx *db.Tx, id string) (*cdbm.NetworkSecurityGroup, error)
-
-	// Interface operations
 	GetInterfacesByInstanceID(ctx context.Context, tx *db.Tx, instanceID uuid.UUID) ([]cdbm.Interface, error)
 	GetInfiniBandInterfacesByInstanceID(ctx context.Context, tx *db.Tx, instanceID uuid.UUID) ([]cdbm.InfiniBandInterface, error)
 	GetNVLinkInterfacesByInstanceID(ctx context.Context, tx *db.Tx, instanceID uuid.UUID) ([]cdbm.NVLinkInterface, error)
@@ -51,8 +44,8 @@ type SQLService struct {
 	dbSession *db.Session
 }
 
-// NewSQLService creates a new SQLService.
-func NewSQLService(dbSession *db.Session) *SQLService {
+// New creates a new SQLService.
+func New(dbSession *db.Session) *SQLService {
 	return &SQLService{dbSession: dbSession}
 }
 

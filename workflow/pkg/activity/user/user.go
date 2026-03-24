@@ -40,7 +40,7 @@ import (
 	"github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/paginator"
 
 	cloudutils "github.com/NVIDIA/ncx-infra-controller-rest/common/pkg/util"
-	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/internal/config"
+	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/config"
 )
 
 const (

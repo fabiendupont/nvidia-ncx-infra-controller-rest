@@ -27,7 +27,7 @@ import (
 	"time"
 
 	cdbp "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/paginator"
-	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/internal/config"
+	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/util"
 
 	sc "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/client/site"

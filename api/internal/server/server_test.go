@@ -36,11 +36,40 @@ import (
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 	cdbm "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/model"
 	cdbu "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/util"
+	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/compute"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/health"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/networking"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/site"
 	echo "github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	temporalClient "go.temporal.io/sdk/client"
 	tmocks "go.temporal.io/sdk/mocks"
 )
+
+// testRegistry creates a provider registry with all providers initialized
+// for test use. The providers register routes but the handlers won't be
+// exercised since requests are rejected at the auth middleware.
+func testRegistry(dbSession *cdb.Session, tc temporalClient.Client, tnc temporalClient.NamespaceClient, scp *sc.ClientPool, cfg *config.Config) *provider.Registry {
+	registry := provider.NewRegistry()
+	registry.Register(networking.New())
+	registry.Register(compute.New())
+	registry.Register(site.New())
+	registry.Register(health.New())
+	registry.ResolveDependencies()
+
+	apiPathPrefix := "/org/:orgName/" + cfg.GetAPIName()
+	registry.InitAll(provider.ProviderContext{
+		DB:             dbSession,
+		Temporal:       tc,
+		TemporalNS:     tnc,
+		SiteClientPool: scp,
+		Config:         cfg,
+		Registry:       registry,
+		APIPathPrefix:  apiPathPrefix,
+	})
+	return registry
+}
 
 func Test_InitAPIServer(t *testing.T) {
 	type args struct {
@@ -83,7 +112,7 @@ func Test_InitAPIServer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			InitAPIServer(tt.args.cfg, tt.args.dbSession, tt.args.tc, tt.args.tnc, tt.args.scp)
+			InitAPIServer(tt.args.cfg, tt.args.dbSession, tt.args.tc, tt.args.tnc, tt.args.scp, nil)
 		})
 	}
 }
@@ -169,7 +198,8 @@ func Test_Audit(t *testing.T) {
 
 	t.Setenv("SENTRY_DSN", "https://bfe69b59461e44059a533274a6393155@glitchtip.test.com/3")
 
-	srv := InitAPIServer(cfg, dbSession, tc, tnc, scp)
+	registry := testRegistry(dbSession, tc, tnc, scp, cfg)
+	srv := InitAPIServer(cfg, dbSession, tc, tnc, scp, registry)
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/%s/org/wdksahew1rqv/%s/site", cfg.GetAPIRouteVersion(), cfg.GetAPIName()), nil)
@@ -224,7 +254,8 @@ func Test_NotFoundHandler(t *testing.T) {
 	tcfg, _ := cfg.GetTemporalConfig()
 	scp := sc.NewClientPool(tcfg)
 
-	srv := InitAPIServer(cfg, dbSession, tc, tnc, scp)
+	registry := testRegistry(dbSession, tc, tnc, scp, cfg)
+	srv := InitAPIServer(cfg, dbSession, tc, tnc, scp, registry)
 	rec := httptest.NewRecorder()
 
 	// Arbitrary path that should return 404

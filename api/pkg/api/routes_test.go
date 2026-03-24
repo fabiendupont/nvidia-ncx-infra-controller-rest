@@ -20,9 +20,8 @@ package api
 import (
 	"testing"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/handler/util/common"
-	sc "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/client/site"
+	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 	"github.com/stretchr/testify/assert"
 
@@ -35,7 +34,6 @@ func TestNewAPIRoutes(t *testing.T) {
 		dbSession *cdb.Session
 		tc        temporalClient.Client
 		tnc       temporalClient.NamespaceClient
-		scp       *sc.ClientPool
 		cfg       *config.Config
 	}
 
@@ -43,47 +41,17 @@ func TestNewAPIRoutes(t *testing.T) {
 	tnc := &tmocks.NamespaceClient{}
 
 	cfg := common.GetTestConfig()
-	tcfg, _ := cfg.GetTemporalConfig()
-	scp := sc.NewClientPool(tcfg)
 
+	// Core routes only (domain routes are now registered by providers)
 	routeCount := map[string]int{
-		"metadata":                 1,
-		"service-account":          1,
-		"infrastructure-provider":  4,
-		"tenant":                   4,
-		"tenant-account":           5,
-		"site":                     6,
-		"vpc":                      6,
-		"vpcpeering":               4,
-		"vpcprefix":                5,
-		"ip-block":                 6,
-		"instance":                 8,
-		"interface":                1,
-		"infiniband-interface":     2,
-		"infiniband-partition":     5,
-		"nvlink-interface":         2,
-		"nvlink-logical-partition": 4,
-		"expected-machine":         5,
-		"expected-power-shelf":     5,
-		"expected-switch":          5,
-		"instance-type":            5,
-		"machine":                  5,
-		"allocation":               6,
-		"subnet":                   5,
-		"machine-instance-type":    3,
-		"user":                     1,
-		"operating-system":         5,
-		"sshkey":                   5,
-		"sshkeygroup":              5,
-		"machine-capability":       1,
-		"audit":                    2,
-		"network-security-group":   5,
-		"machine-validation":       11,
-		"dpu-extension-service":    7,
-		"sku":                      2,
-		"rack":                     11,
-		"tray":                     8,
-		"stats":                    4,
+		"metadata":                1,
+		"user":                    1,
+		"service-account":         1,
+		"infrastructure-provider": 4,
+		"tenant":                  4,
+		"tenant-account":          5,
+		"stats":                   1,
+		"audit":                   2,
 	}
 
 	totalRouteCount := 0
@@ -101,14 +69,13 @@ func TestNewAPIRoutes(t *testing.T) {
 				dbSession: &cdb.Session{},
 				tc:        tc,
 				tnc:       tnc,
-				scp:       scp,
 				cfg:       cfg,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewAPIRoutes(tt.args.dbSession, tt.args.tc, tt.args.tnc, tt.args.scp, tt.args.cfg)
+			got := NewAPIRoutes(tt.args.dbSession, tt.args.tc, tt.args.tnc, tt.args.cfg)
 
 			assert.Equal(t, totalRouteCount, len(got))
 

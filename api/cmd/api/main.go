@@ -32,6 +32,12 @@ import (
 
 	sc "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/client/site"
 
+	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/compute"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/health"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/networking"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/site"
+
 	// Imports for API doc generation
 	_ "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/model"
 )
@@ -102,8 +108,71 @@ func main() {
 
 	scp := sc.NewClientPool(tcfg)
 
+	// Set up deployment profiles
+	provider.RegisterProfileProviders(provider.ProfileManagement, []func() provider.Provider{
+		func() provider.Provider { return networking.New() },
+		func() provider.Provider { return compute.New() },
+		func() provider.Provider { return health.New() },
+	})
+	provider.RegisterProfileProviders(provider.ProfileSite, []func() provider.Provider{
+		func() provider.Provider { return networking.New() },
+		func() provider.Provider { return compute.New() },
+		func() provider.Provider { return site.New() },
+		func() provider.Provider { return health.New() },
+	})
+	provider.RegisterProfileProviders(provider.ProfileManagementWithSite, []func() provider.Provider{
+		func() provider.Provider { return networking.New() },
+		func() provider.Provider { return compute.New() },
+		func() provider.Provider { return site.New() },
+		func() provider.Provider { return health.New() },
+	})
+	provider.RegisterProfileProviders(provider.ProfileNCP, []func() provider.Provider{
+		func() provider.Provider { return networking.New() },
+		func() provider.Provider { return compute.New() },
+		func() provider.Provider { return site.New() },
+		func() provider.Provider { return health.New() },
+		// Future: catalog.New(), fulfillment.New()
+	})
+
+	// Create provider registry and register providers for the active profile
+	profile := provider.GetProfile()
+	log.Info().Str("profile", profile).Msg("loading deployment profile")
+
+	factories := provider.GetProfileProviders(profile)
+	if factories == nil {
+		log.Panic().Str("profile", profile).Msg("unknown deployment profile")
+	}
+
+	registry := provider.NewRegistry()
+	for _, factory := range factories {
+		if err := registry.Register(factory()); err != nil {
+			log.Panic().Err(err).Msg("failed to register provider")
+		}
+	}
+
+	// Resolve dependencies and initialize providers
+	if err := registry.ResolveDependencies(); err != nil {
+		log.Panic().Err(err).Msg("failed to resolve provider dependencies")
+	}
+
+	apiPathPrefix := "/org/:orgName/" + cfg.GetAPIName()
+
+	if err := registry.InitAll(provider.ProviderContext{
+		DB:             dbSession,
+		Temporal:       tc,
+		TemporalNS:     tnc,
+		SiteClientPool: scp,
+		Config:         cfg,
+		Registry:       registry,
+		APIPathPrefix:  apiPathPrefix,
+	}); err != nil {
+		log.Panic().Err(err).Msg("failed to initialize providers")
+	}
+
+	log.Info().Int("count", len(registry.APIProviders())).Msg("providers initialized")
+
 	// Initialize API Echo instance
-	e := capis.InitAPIServer(cfg, dbSession, tc, tnc, scp)
+	e := capis.InitAPIServer(cfg, dbSession, tc, tnc, scp, registry)
 
 	mconfig := cfg.GetMetricsConfig()
 	if mconfig.Enabled {

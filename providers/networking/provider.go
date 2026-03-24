@@ -20,13 +20,27 @@ package networking
 import (
 	"context"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
+	tClient "go.temporal.io/sdk/client"
+
+	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/client/site"
+	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
+	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/networking/networkingsvc"
+	sc "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/client/site"
 )
 
 // NetworkingProvider implements the networking feature provider.
 type NetworkingProvider struct {
-	service *SQLService
+	service                *networkingsvc.SQLService
+	dbSession              *cdb.Session
+	tc                     tClient.Client
+	scp                    *site.ClientPool
+	cfg                    *config.Config
+	apiPathPrefix          string
+	temporalNamespace      string
+	temporalQueue          string
+	workflowSiteClientPool *sc.ClientPool
 }
 
 // New creates a new NetworkingProvider.
@@ -34,13 +48,23 @@ func New() *NetworkingProvider {
 	return &NetworkingProvider{}
 }
 
-func (p *NetworkingProvider) Name() string         { return "nico-networking" }
-func (p *NetworkingProvider) Version() string      { return "1.0.6" }
-func (p *NetworkingProvider) Features() []string   { return []string{"networking"} }
+func (p *NetworkingProvider) Name() string           { return "nico-networking" }
+func (p *NetworkingProvider) Version() string        { return "1.0.6" }
+func (p *NetworkingProvider) Features() []string     { return []string{"networking"} }
 func (p *NetworkingProvider) Dependencies() []string { return nil }
 
 func (p *NetworkingProvider) Init(ctx provider.ProviderContext) error {
-	p.service = NewSQLService(ctx.DB)
+	p.service = networkingsvc.New(ctx.DB)
+	p.dbSession = ctx.DB
+	p.tc = ctx.Temporal
+	p.scp = ctx.SiteClientPool
+	p.cfg = ctx.Config.(*config.Config)
+	p.apiPathPrefix = ctx.APIPathPrefix
+	p.temporalNamespace = ctx.TemporalNamespace
+	p.temporalQueue = ctx.TemporalQueue
+	if ctx.WorkflowSiteClientPool != nil {
+		p.workflowSiteClientPool = ctx.WorkflowSiteClientPool.(*sc.ClientPool)
+	}
 	return nil
 }
 
@@ -49,12 +73,6 @@ func (p *NetworkingProvider) Shutdown(_ context.Context) error {
 }
 
 // Service returns the networking service for cross-domain access.
-func (p *NetworkingProvider) Service() Service {
+func (p *NetworkingProvider) Service() networkingsvc.Service {
 	return p.service
-}
-
-// NewService creates a networking Service from a DB session. This is used
-// during the migration period when providers aren't fully wired up yet.
-func NewService(dbSession *db.Session) Service {
-	return NewSQLService(dbSession)
 }

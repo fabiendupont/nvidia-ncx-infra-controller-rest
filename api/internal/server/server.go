@@ -49,6 +49,7 @@ import (
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api"
 	"github.com/NVIDIA/ncx-infra-controller-rest/common/pkg/otelecho"
+	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 
 	sc "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/client/site"
 	authn "github.com/NVIDIA/ncx-infra-controller-rest/auth/pkg/authentication"
@@ -118,7 +119,7 @@ func InitTemporalClients(tcfg *cconfig.TemporalConfig, tracingEnabled bool) (tsd
 	return tc, tnc, err
 }
 
-func InitAPIServer(cfg *config.Config, dbSession *cdb.Session, tc tsdkClient.Client, tnc tsdkClient.NamespaceClient, scp *sc.ClientPool) *echo.Echo {
+func InitAPIServer(cfg *config.Config, dbSession *cdb.Session, tc tsdkClient.Client, tnc tsdkClient.NamespaceClient, scp *sc.ClientPool, registry *provider.Registry) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 	e.HTTPErrorHandler = cerr.DefaultHTTPErrorHandler
@@ -273,9 +274,24 @@ func InitAPIServer(cfg *config.Config, dbSession *cdb.Session, tc tsdkClient.Cli
 	authMiddleware := authn.Auth(dbSession, tc, jwtOriginConfig, payloadEncryptionConfig, keycloakConfig)
 	routeGroup.Use(authMiddleware)
 
-	apiRoutes := api.NewAPIRoutes(dbSession, tc, tnc, scp, cfg)
+	apiRoutes := api.NewAPIRoutes(dbSession, tc, tnc, cfg)
 	for _, apiRoute := range apiRoutes {
 		routeGroup.Add(apiRoute.Method, apiRoute.Path, apiRoute.Handler.Handle)
+	}
+
+	// Register provider routes
+	if registry != nil {
+		for _, p := range registry.APIProviders() {
+			p.RegisterRoutes(routeGroup)
+		}
+
+		// Register capabilities endpoint
+		capabilityHandler := provider.NewCapabilityHandler(registry)
+		apiPathPrefix := "/org/:orgName/" + cfg.GetAPIName()
+		routeGroup.GET(apiPathPrefix+"/capabilities", capabilityHandler.Handle)
+
+		// Register stub routes for unimplemented features
+		provider.RegisterStubs(routeGroup, registry)
 	}
 	if keycloakConfig != nil {
 		log.Info().Msg("Registering Keycloak auth routes")

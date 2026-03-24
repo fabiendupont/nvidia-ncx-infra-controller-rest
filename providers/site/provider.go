@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package compute
+package site
 
 import (
 	"context"
@@ -26,37 +26,33 @@ import (
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
-	"github.com/NVIDIA/ncx-infra-controller-rest/providers/compute/computesvc"
 )
 
-// ComputeProvider implements the compute feature provider.
-type ComputeProvider struct {
-	service       *computesvc.SQLService
-	dbSession     *cdb.Session
-	tc            tClient.Client
-	tnc           tClient.NamespaceClient
-	scp           *site.ClientPool
-	cfg           *config.Config
-	apiPathPrefix string
-
+// SiteProvider implements the site feature provider.
+type SiteProvider struct {
+	dbSession              *cdb.Session
+	tc                     tClient.Client
+	tnc                    tClient.NamespaceClient
+	scp                    *site.ClientPool
+	cfg                    *config.Config
+	apiPathPrefix          string
 	temporalNamespace      string
 	temporalQueue          string
 	workflowSiteClientPool interface{}
 	workflowConfig         interface{}
 }
 
-// New creates a new ComputeProvider.
-func New() *ComputeProvider {
-	return &ComputeProvider{}
+// New creates a new SiteProvider.
+func New() *SiteProvider {
+	return &SiteProvider{}
 }
 
-func (p *ComputeProvider) Name() string           { return "nico-compute" }
-func (p *ComputeProvider) Version() string        { return "1.0.6" }
-func (p *ComputeProvider) Features() []string     { return []string{"compute"} }
-func (p *ComputeProvider) Dependencies() []string { return []string{"nico-networking"} }
+func (p *SiteProvider) Name() string           { return "nico-site" }
+func (p *SiteProvider) Version() string        { return "1.0.6" }
+func (p *SiteProvider) Features() []string     { return []string{"site"} }
+func (p *SiteProvider) Dependencies() []string { return []string{"nico-compute"} }
 
-func (p *ComputeProvider) Init(ctx provider.ProviderContext) error {
-	p.service = computesvc.New(ctx.DB)
+func (p *SiteProvider) Init(ctx provider.ProviderContext) error {
 	p.dbSession = ctx.DB
 	p.tc = ctx.Temporal
 	p.tnc = ctx.TemporalNS
@@ -72,11 +68,6 @@ func (p *ComputeProvider) Init(ctx provider.ProviderContext) error {
 	return nil
 }
 
-func (p *ComputeProvider) Shutdown(_ context.Context) error {
+func (p *SiteProvider) Shutdown(_ context.Context) error {
 	return nil
-}
-
-// Service returns the compute service for cross-domain access.
-func (p *ComputeProvider) Service() computesvc.Service {
-	return p.service
 }

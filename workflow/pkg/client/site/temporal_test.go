@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	cconfig "github.com/NVIDIA/ncx-infra-controller-rest/common/pkg/config"
-	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/internal/config"
+	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/config"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	temporalClient "go.temporal.io/sdk/client"
