@@ -51,6 +51,24 @@ type ManageVpc struct {
 	dbSession      *cdb.Session
 	siteClientPool *sc.ClientPool
 	tc             client.Client
+	hooks          hookFirer
+}
+
+type hookFirer interface {
+	FireSync(ctx context.Context, feature, event string, payload interface{}) error
+	FireAsync(ctx context.Context, feature, event string, payload interface{})
+}
+
+// SetHooks sets the hook runner for firing lifecycle events.
+func (mv *ManageVpc) SetHooks(hooks hookFirer) {
+	mv.hooks = hooks
+}
+
+func (mv ManageVpc) fireAsync(ctx context.Context, feature, event string, payload interface{}) {
+	if mv.hooks == nil {
+		return
+	}
+	mv.hooks.FireAsync(ctx, feature, event, payload)
 }
 
 // Activity functions
@@ -126,6 +144,8 @@ func (mv ManageVpc) CreateVpcViaSiteAgent(ctx context.Context, siteID uuid.UUID,
 
 	logger.Info().Str("Workflow ID", we.GetID()).Msg("triggered Site agent workflow to create VPC")
 
+	mv.fireAsync(ctx, "networking", "post-create-vpc", vpcID)
+
 	logger.Info().Msg("completed activity")
 
 	return nil
@@ -197,6 +217,8 @@ func (mv ManageVpc) DeleteVpcViaSiteAgent(ctx context.Context, siteID uuid.UUID,
 	_ = mv.updateVpcStatusInDB(ctx, nil, vpcID, &status, &statusMessage)
 
 	logger.Info().Str("Workflow ID", we.GetID()).Msg("triggered Site agent workflow to delete VPC")
+
+	mv.fireAsync(ctx, "networking", "post-delete-vpc", vpcID)
 
 	logger.Info().Msg("completed activity")
 

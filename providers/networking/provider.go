@@ -41,6 +41,7 @@ type NetworkingProvider struct {
 	temporalNamespace      string
 	temporalQueue          string
 	workflowSiteClientPool *sc.ClientPool
+	hooks                  *provider.HookRunner
 }
 
 // New creates a new NetworkingProvider.
@@ -65,6 +66,7 @@ func (p *NetworkingProvider) Init(ctx provider.ProviderContext) error {
 	if ctx.WorkflowSiteClientPool != nil {
 		p.workflowSiteClientPool = ctx.WorkflowSiteClientPool.(*sc.ClientPool)
 	}
+	p.hooks = ctx.Hooks
 	return nil
 }
 

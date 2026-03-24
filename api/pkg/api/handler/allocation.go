@@ -51,6 +51,7 @@ import (
 	cwssaws "github.com/NVIDIA/ncx-infra-controller-rest/workflow-schema/schema/site-agent/workflows/v1"
 
 	"github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/ipam"
+	networkingsvc "github.com/NVIDIA/ncx-infra-controller-rest/providers/networking/networkingsvc"
 )
 
 // ~~~~~ Create Handler ~~~~~ //
@@ -283,14 +284,14 @@ func (cah CreateAllocationHandler) Handle(c echo.Context) error {
 			logger.Info().Str("Child CIDR", childPrefix.Cidr).Msg("created child CIDR")
 
 			// Create an IP Block corresponding to the child prefix
-			ipbDAO := cdbm.NewIPBlockDAO(cah.dbSession)
+			nSvc := networkingsvc.New(cah.dbSession)
 			prefix, blockSize, serr := ipam.ParseCidrIntoPrefixAndBlockSize(childPrefix.Cidr)
 			if serr != nil {
 				logger.Error().Err(serr).Msg("unable to create IP Block child IPAM entry for Allocation Constraint")
 				return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("Could not create IPBlock child IPAM entry for Allocation Constraint. Details: %s", serr.Error()), nil)
 			}
 
-			childIPBlock, serr := ipbDAO.Create(
+			childIPBlock, serr := nSvc.CreateIPBlock(
 				ctx,
 				tx,
 				cdbm.IPBlockCreateInput{
@@ -1076,8 +1077,8 @@ func (uah UpdateAllocationHandler) Handle(c echo.Context) error {
 		if len(acs) > 0 {
 			ac := acs[0]
 			// Update the derived resource name
-			ipbDAO := cdbm.NewIPBlockDAO(uah.dbSession)
-			_, err = ipbDAO.Update(
+			nSvc := networkingsvc.New(uah.dbSession)
+			_, err = nSvc.UpdateIPBlock(
 				ctx,
 				tx,
 				cdbm.IPBlockUpdateInput{
@@ -1251,9 +1252,7 @@ func (dah DeleteAllocationHandler) Handle(c echo.Context) error {
 	}
 
 	iDAO := cdbm.NewInstanceDAO(dah.dbSession)
-	sDAO := cdbm.NewSubnetDAO(dah.dbSession)
-	vpDAO := cdbm.NewVpcPrefixDAO(dah.dbSession)
-	ipbDAO := cdbm.NewIPBlockDAO(dah.dbSession)
+	nSvc := networkingsvc.New(dah.dbSession)
 
 	imAcDel := []cdbm.AllocationConstraint{}
 	imAcUpd := []cdbm.AllocationConstraint{}
@@ -1356,7 +1355,7 @@ func (dah DeleteAllocationHandler) Handle(c echo.Context) error {
 		case cdbm.AllocationResourceTypeIPBlock:
 			// check if the tenant has subnets or VpcPrefixes using this ipblock
 			if ac.DerivedResourceID != nil {
-				parentIPBlock, serr := ipbDAO.GetByID(ctx, tx, ac.ResourceTypeID, nil)
+				parentIPBlock, serr := nSvc.GetIPBlockByID(ctx, tx, ac.ResourceTypeID)
 				if serr != nil {
 					if serr == cdb.ErrDoesNotExist {
 						logger.Warn().Err(serr).Str("Constraint ID", ac.ResourceTypeID.String()).Msg("IP Block for Allocation not found in DB")
@@ -1365,7 +1364,7 @@ func (dah DeleteAllocationHandler) Handle(c echo.Context) error {
 						return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Error retrieving IP Block for Allocation", nil)
 					}
 				}
-				childIPBlock, sserr := ipbDAO.GetByID(ctx, tx, *ac.DerivedResourceID, nil)
+				childIPBlock, sserr := nSvc.GetIPBlockByID(ctx, tx, *ac.DerivedResourceID)
 				if sserr != nil {
 					if sserr == cdb.ErrDoesNotExist {
 						logger.Warn().Err(sserr).Str("Constraint ID", ac.DerivedResourceID.String()).Msg("Tenant IP Block for Allocation was not found in DB")
@@ -1399,7 +1398,7 @@ func (dah DeleteAllocationHandler) Handle(c echo.Context) error {
 					}
 
 					// Get count of subnets for the IP Block
-					_, sbCount, sserr := sDAO.GetAll(ctx, tx, subnetFilter, cdbp.PageInput{Limit: cdb.GetIntPtr(0)}, []string{})
+					_, sbCount, sserr := nSvc.GetSubnets(ctx, tx, subnetFilter, cdbp.PageInput{Limit: cdb.GetIntPtr(0)})
 					if sserr != nil {
 						logger.Error().Err(sserr).Str("Constraint ID", ac.DerivedResourceID.String()).Msg("error getting Subnets for Allocation Constraint's IP Block")
 						return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Error retrieving Subnets for Allocation's IP Block'", nil)
@@ -1410,7 +1409,7 @@ func (dah DeleteAllocationHandler) Handle(c echo.Context) error {
 					}
 
 					// Get count of Vpc Prefixes for the IP Block
-					_, vpCount, sserr := vpDAO.GetAll(ctx, tx, vpcPrefixFilter, cdbp.PageInput{Limit: cdb.GetIntPtr(0)}, []string{})
+					_, vpCount, sserr := nSvc.GetVpcPrefixes(ctx, tx, vpcPrefixFilter, cdbp.PageInput{Limit: cdb.GetIntPtr(0)})
 					if sserr != nil {
 						logger.Error().Err(sserr).Str("Constraint ID", ac.DerivedResourceID.String()).Msg("error getting Vpc Prefixes for Allocation Constraint's IP Block")
 						return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Error retrieving Vpc Prefixes for Allocation's IP Block'", nil)
@@ -1420,7 +1419,7 @@ func (dah DeleteAllocationHandler) Handle(c echo.Context) error {
 						return cutil.NewAPIErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("%v VPC Prefixes exist for Allocation", vpCount), nil)
 					}
 
-					sserr = ipbDAO.Delete(ctx, tx, childIPBlock.ID)
+					sserr = nSvc.DeleteIPBlock(ctx, tx, childIPBlock.ID)
 					if sserr != nil {
 						logger.Error().Err(sserr).Str("Constraint ID", ac.DerivedResourceID.String()).Msg("error deleting Tenant IP Block for Allocation Constraint")
 						return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Error deleting Tenant IP Block for Allocation", nil)

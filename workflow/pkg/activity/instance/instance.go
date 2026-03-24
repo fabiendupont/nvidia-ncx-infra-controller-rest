@@ -56,6 +56,33 @@ type ManageInstance struct {
 	siteClientPool *sc.ClientPool
 	tc             client.Client
 	cfg            *config.Config
+	hooks          hookFirer
+}
+
+// hookFirer is the interface for firing lifecycle hooks. Matches
+// provider.HookFirer but defined locally to avoid import cycles.
+type hookFirer interface {
+	FireSync(ctx context.Context, feature, event string, payload interface{}) error
+	FireAsync(ctx context.Context, feature, event string, payload interface{})
+}
+
+// SetHooks sets the hook runner for firing lifecycle events.
+func (mi *ManageInstance) SetHooks(hooks hookFirer) {
+	mi.hooks = hooks
+}
+
+func (mi ManageInstance) fireSync(ctx context.Context, feature, event string, payload interface{}) error {
+	if mi.hooks == nil {
+		return nil
+	}
+	return mi.hooks.FireSync(ctx, feature, event, payload)
+}
+
+func (mi ManageInstance) fireAsync(ctx context.Context, feature, event string, payload interface{}) {
+	if mi.hooks == nil {
+		return
+	}
+	mi.hooks.FireAsync(ctx, feature, event, payload)
 }
 
 // Activity functions
@@ -292,6 +319,9 @@ func (mi ManageInstance) CreateInstanceViaSiteAgent(ctx context.Context, instanc
 
 	logger.Info().Str("Workflow ID", we.GetID()).Msg("triggered Site Agent workflow to create Instance")
 
+	// Fire post-create hooks (async — don't block the activity)
+	mi.fireAsync(ctx, "compute", "post-create-instance", instanceID)
+
 	logger.Info().Msg("completed activity")
 
 	return nil
@@ -431,6 +461,9 @@ func (mi ManageInstance) DeleteInstanceViaSiteAgent(ctx context.Context, instanc
 	_ = mi.updateInstanceStatusInDB(ctx, nil, instanceID, &status, &statusMessage, nil)
 
 	logger.Info().Str("Workflow ID", we.GetID()).Msg("triggered Site Agent workflow to delete Instance")
+
+	// Fire post-delete hooks (async — notify billing, DCIM, etc.)
+	mi.fireAsync(ctx, "compute", "post-delete-instance", instanceID)
 
 	logger.Info().Msg("completed activity")
 

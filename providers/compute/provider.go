@@ -43,6 +43,7 @@ type ComputeProvider struct {
 	temporalQueue          string
 	workflowSiteClientPool interface{}
 	workflowConfig         interface{}
+	hooks                  *provider.HookRunner
 }
 
 // New creates a new ComputeProvider.
@@ -69,6 +70,7 @@ func (p *ComputeProvider) Init(ctx provider.ProviderContext) error {
 	p.temporalQueue = ctx.TemporalQueue
 	p.workflowSiteClientPool = ctx.WorkflowSiteClientPool
 	p.workflowConfig = ctx.Config
+	p.hooks = ctx.Hooks
 	return nil
 }
 

@@ -219,6 +219,8 @@ func main() {
 		log.Panic().Err(err).Msg("failed to resolve provider dependencies")
 	}
 
+	hooks := provider.NewHookRunner(registry, tc)
+
 	if err := registry.InitAll(provider.ProviderContext{
 		DB:                     dbSession,
 		Temporal:               tc,
@@ -227,6 +229,7 @@ func main() {
 		TemporalNamespace:      tcfg.Namespace,
 		TemporalQueue:          tcfg.Queue,
 		WorkflowSiteClientPool: siteClientPool,
+		Hooks:                  hooks,
 	}); err != nil {
 		log.Panic().Err(err).Msg("failed to initialize providers")
 	}

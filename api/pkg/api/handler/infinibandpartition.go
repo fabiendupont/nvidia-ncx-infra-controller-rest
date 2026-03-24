@@ -43,6 +43,7 @@ import (
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 	cdbm "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/model"
 	"github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/paginator"
+	computesvc "github.com/NVIDIA/ncx-infra-controller-rest/providers/compute/computesvc"
 	swe "github.com/NVIDIA/ncx-infra-controller-rest/site-workflow/pkg/error"
 
 	cwssaws "github.com/NVIDIA/ncx-infra-controller-rest/workflow-schema/schema/site-agent/workflows/v1"
@@ -165,9 +166,8 @@ func (cibph CreateInfiniBandPartitionHandler) Handle(c echo.Context) error {
 	}
 
 	// Ensure that Tenant has an Allocation with specified Site
-	aDAO := cdbm.NewAllocationDAO(cibph.dbSession)
 	allocationFilter := cdbm.AllocationFilterInput{TenantIDs: []uuid.UUID{orgTenant.ID}, SiteIDs: []uuid.UUID{site.ID}}
-	aCount, serr := aDAO.GetCount(ctx, nil, allocationFilter)
+	aCount, serr := computesvc.New(cibph.dbSession).GetAllocationsCount(ctx, nil, allocationFilter)
 	if serr != nil {
 		logger.Error().Err(serr).Msg("error retrieving Allocations count from DB for Tenant and Site")
 		return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve Site Allocations count for Tenant", nil)
@@ -790,9 +790,8 @@ func (uibph UpdateInfiniBandPartitionHandler) Handle(c echo.Context) error {
 	}
 
 	// Ensure that Tenant has an Allocation with specified Site
-	aDAO := cdbm.NewAllocationDAO(uibph.dbSession)
 	allocationFilter := cdbm.AllocationFilterInput{TenantIDs: []uuid.UUID{ibp.TenantID}, SiteIDs: []uuid.UUID{ibp.SiteID}}
-	aCount, serr := aDAO.GetCount(ctx, nil, allocationFilter)
+	aCount, serr := computesvc.New(uibph.dbSession).GetAllocationsCount(ctx, nil, allocationFilter)
 	if serr != nil {
 		logger.Error().Err(serr).Msg("error retrieving Allocations count from DB for Tenant and Site")
 		return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve Site Allocations count for Tenant", nil)

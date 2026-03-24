@@ -40,6 +40,7 @@ import (
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 	cdbm "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/model"
 	cdbp "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/paginator"
+	computesvc "github.com/NVIDIA/ncx-infra-controller-rest/providers/compute/computesvc"
 	swe "github.com/NVIDIA/ncx-infra-controller-rest/site-workflow/pkg/error"
 	cwssaws "github.com/NVIDIA/ncx-infra-controller-rest/workflow-schema/schema/site-agent/workflows/v1"
 	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/queue"
@@ -561,10 +562,10 @@ func (gansgh GetAllNetworkSecurityGroupHandler) Handle(c echo.Context) error {
 
 	if includeAttachmentStats {
 
-		insDAO := cdbm.NewInstanceDAO(gansgh.dbSession)
+		computeSvc := computesvc.New(gansgh.dbSession)
 		vpcDAO := cdbm.NewVpcDAO(gansgh.dbSession)
 
-		instances, _, err := insDAO.GetAll(ctx, nil, cdbm.InstanceFilterInput{NetworkSecurityGroupIDs: itIDs}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
+		instances, _, err := computeSvc.GetInstances(ctx, nil, cdbm.InstanceFilterInput{NetworkSecurityGroupIDs: itIDs}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)})
 		if err != nil {
 			return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve related Instances for Network Security Groups", nil)
 		}
@@ -785,10 +786,10 @@ func (gansgh GetNetworkSecurityGroupHandler) Handle(c echo.Context) error {
 	// Attach stats if requested
 	if includeAttachmentStats {
 
-		insDAO := cdbm.NewInstanceDAO(gansgh.dbSession)
+		computeSvc := computesvc.New(gansgh.dbSession)
 		vpcDAO := cdbm.NewVpcDAO(gansgh.dbSession)
 
-		_, instanceCount, err := insDAO.GetAll(ctx, nil, cdbm.InstanceFilterInput{NetworkSecurityGroupIDs: []string{nsgID}}, cdbp.PageInput{Limit: cdb.GetIntPtr(0)}, nil)
+		_, instanceCount, err := computeSvc.GetInstances(ctx, nil, cdbm.InstanceFilterInput{NetworkSecurityGroupIDs: []string{nsgID}}, cdbp.PageInput{Limit: cdb.GetIntPtr(0)})
 		if err != nil {
 			return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve related Instances for Network Security Group", nil)
 		}
@@ -899,10 +900,10 @@ func (dnsgh DeleteNetworkSecurityGroupHandler) Handle(c echo.Context) error {
 	// already performs all of these checks, so we could skip
 	// this here and defer to the sites.
 
-	insDAO := cdbm.NewInstanceDAO(dnsgh.dbSession)
+	computeSvc := computesvc.New(dnsgh.dbSession)
 	vpcDAO := cdbm.NewVpcDAO(dnsgh.dbSession)
 
-	_, instanceCount, err := insDAO.GetAll(ctx, nil, cdbm.InstanceFilterInput{NetworkSecurityGroupIDs: []string{nsgID}}, cdbp.PageInput{Limit: cdb.GetIntPtr(0)}, nil)
+	_, instanceCount, err := computeSvc.GetInstances(ctx, nil, cdbm.InstanceFilterInput{NetworkSecurityGroupIDs: []string{nsgID}}, cdbp.PageInput{Limit: cdb.GetIntPtr(0)})
 	if err != nil {
 		return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve related Instances for Network Security Group", nil)
 	}

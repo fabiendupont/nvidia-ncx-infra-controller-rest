@@ -34,8 +34,10 @@ import (
 
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/compute"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/firmware"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/health"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/networking"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/nvswitch"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/site"
 
 	// Imports for API doc generation
@@ -113,24 +115,31 @@ func main() {
 		func() provider.Provider { return networking.New() },
 		func() provider.Provider { return compute.New() },
 		func() provider.Provider { return health.New() },
+		func() provider.Provider { return firmware.New() },
+		func() provider.Provider { return nvswitch.New() },
 	})
 	provider.RegisterProfileProviders(provider.ProfileSite, []func() provider.Provider{
 		func() provider.Provider { return networking.New() },
 		func() provider.Provider { return compute.New() },
 		func() provider.Provider { return site.New() },
 		func() provider.Provider { return health.New() },
+		func() provider.Provider { return nvswitch.New() },
 	})
 	provider.RegisterProfileProviders(provider.ProfileManagementWithSite, []func() provider.Provider{
 		func() provider.Provider { return networking.New() },
 		func() provider.Provider { return compute.New() },
 		func() provider.Provider { return site.New() },
 		func() provider.Provider { return health.New() },
+		func() provider.Provider { return firmware.New() },
+		func() provider.Provider { return nvswitch.New() },
 	})
 	provider.RegisterProfileProviders(provider.ProfileNCP, []func() provider.Provider{
 		func() provider.Provider { return networking.New() },
 		func() provider.Provider { return compute.New() },
 		func() provider.Provider { return site.New() },
 		func() provider.Provider { return health.New() },
+		func() provider.Provider { return firmware.New() },
+		func() provider.Provider { return nvswitch.New() },
 		// Future: catalog.New(), fulfillment.New()
 	})
 

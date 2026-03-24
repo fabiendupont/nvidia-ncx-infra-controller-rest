@@ -53,4 +53,9 @@ type ProviderContext struct {
 	// type-assert to *workflow/pkg/client/site.ClientPool when registering
 	// activities. Nil when running in the API binary.
 	WorkflowSiteClientPool interface{}
+
+	// Hooks provides hook firing capabilities for activities. Created
+	// by the main binary from the Registry and Temporal client. Nil
+	// when running without hook support.
+	Hooks *HookRunner
 }

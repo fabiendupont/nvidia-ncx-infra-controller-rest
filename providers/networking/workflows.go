@@ -95,6 +95,9 @@ func (p *NetworkingProvider) RegisterWorkflows(w tsdkWorker.Worker) {
 // on the supplied worker.
 func (p *NetworkingProvider) RegisterActivities(w tsdkWorker.Worker) {
 	vpcManager := vpcActivity.NewManageVpc(p.dbSession, p.workflowSiteClientPool, p.tc)
+	if p.hooks != nil {
+		vpcManager.SetHooks(p.hooks)
+	}
 	w.RegisterActivity(&vpcManager)
 
 	subnetManager := subnetActivity.NewManageSubnet(p.dbSession, p.workflowSiteClientPool, p.tc)

@@ -41,6 +41,7 @@ import (
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/pagination"
 	auth "github.com/NVIDIA/ncx-infra-controller-rest/auth/pkg/authorization"
 	cutil "github.com/NVIDIA/ncx-infra-controller-rest/common/pkg/util"
+	computesvc "github.com/NVIDIA/ncx-infra-controller-rest/providers/compute/computesvc"
 )
 
 // ~~~~~ GetAll Instance InfiniBandInterface Handler ~~~~~ //
@@ -278,8 +279,7 @@ func (gaibih GetAllInfiniBandInterfaceHandler) Handle(c echo.Context) error {
 		// De-duplicate Instance IDs
 		instanceIDs = goset.NewSet(instanceIDs...).ToSlice()
 
-		instanceDAO := cdbm.NewInstanceDAO(gaibih.dbSession)
-		instances, _, err := instanceDAO.GetAll(ctx, nil, cdbm.InstanceFilterInput{InstanceIDs: instanceIDs}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
+		instances, _, err := computesvc.New(gaibih.dbSession).GetInstances(ctx, nil, cdbm.InstanceFilterInput{InstanceIDs: instanceIDs}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)})
 		if err != nil {
 			logger.Error().Err(err).Msg("error retrieving Instances from DB")
 			return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve Instances specified in %s, DB error", lo.Ternary(instanceIDFromPath, "request", "query")), nil)

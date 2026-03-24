@@ -28,6 +28,7 @@ type Registry struct {
 	providers map[string]Provider
 	features  map[string]string // feature name → provider name
 	order     []string          // init order after dependency resolution
+	hooks     *hookRegistry
 }
 
 // NewRegistry creates a new provider registry.
@@ -35,6 +36,7 @@ func NewRegistry() *Registry {
 	return &Registry{
 		providers: make(map[string]Provider),
 		features:  make(map[string]string),
+		hooks:     newHookRegistry(),
 	}
 }
 

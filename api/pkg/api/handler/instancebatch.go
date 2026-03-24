@@ -46,6 +46,7 @@ import (
 	cdbm "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/model"
 	cdbp "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/paginator"
 	cwssaws "github.com/NVIDIA/ncx-infra-controller-rest/workflow-schema/schema/site-agent/workflows/v1"
+	networkingsvc "github.com/NVIDIA/ncx-infra-controller-rest/providers/networking/networkingsvc"
 	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/queue"
 )
 
@@ -452,8 +453,7 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 	}
 
 	// Load and validate subnets and VPC prefixes (batch query for efficiency)
-	subnetDAO := cdbm.NewSubnetDAO(bcih.dbSession)
-	vpDAO := cdbm.NewVpcPrefixDAO(bcih.dbSession)
+	netSvc := networkingsvc.New(bcih.dbSession)
 
 	// Collect all Subnet and VPC Prefix IDs for batch query
 	subnetIDs := []uuid.UUID{}
@@ -482,7 +482,7 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 	// Batch fetch Subnets from DB
 	subnetIDMap := make(map[uuid.UUID]*cdbm.Subnet)
 	if len(subnetIDs) > 0 {
-		subnets, _, err := subnetDAO.GetAll(ctx, nil, cdbm.SubnetFilterInput{SubnetIDs: subnetIDs}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
+		subnets, _, err := netSvc.GetSubnets(ctx, nil, cdbm.SubnetFilterInput{SubnetIDs: subnetIDs}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)})
 		if err != nil {
 			logger.Error().Err(err).Msg("error retrieving Subnets from DB by IDs")
 			return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve Subnets from DB by IDs", nil)
@@ -495,7 +495,7 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 	// Batch fetch VPC Prefixes from DB
 	vpcPrefixIDMap := make(map[uuid.UUID]*cdbm.VpcPrefix)
 	if len(vpcPrefixIDs) > 0 {
-		vpcPrefixes, _, err := vpDAO.GetAll(ctx, nil, cdbm.VpcPrefixFilterInput{VpcPrefixIDs: vpcPrefixIDs}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
+		vpcPrefixes, _, err := netSvc.GetVpcPrefixes(ctx, nil, cdbm.VpcPrefixFilterInput{VpcPrefixIDs: vpcPrefixIDs}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)})
 		if err != nil {
 			logger.Error().Err(err).Msg("error retrieving VPC Prefixes from DB by IDs")
 			return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve VPC Prefixes from DB by IDs", nil)
@@ -694,10 +694,9 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 		}
 
 		// (2) Batch fetch all DPU Extension Services in one query
-		desDAO := cdbm.NewDpuExtensionServiceDAO(bcih.dbSession)
-		desList, _, err := desDAO.GetAll(ctx, nil, cdbm.DpuExtensionServiceFilterInput{
+		desList, _, err := netSvc.GetDpuExtensionServices(ctx, nil, cdbm.DpuExtensionServiceFilterInput{
 			DpuExtensionServiceIDs: uniqueDesIDs,
-		}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
+		}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)})
 		if err != nil {
 			logger.Error().Err(err).Msg("error retrieving DPU Extension Services from DB")
 			return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError,
@@ -759,9 +758,7 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 
 	// Validate Network Security Group if specified (shared across all instances)
 	if apiRequest.NetworkSecurityGroupID != nil {
-		nsgDAO := cdbm.NewNetworkSecurityGroupDAO(bcih.dbSession)
-
-		nsg, err := nsgDAO.GetByID(ctx, nil, *apiRequest.NetworkSecurityGroupID, nil)
+		nsg, err := netSvc.GetNetworkSecurityGroupByID(ctx, nil, *apiRequest.NetworkSecurityGroupID)
 		if err != nil {
 			if err == cdb.ErrDoesNotExist {
 				return cutil.NewAPIErrorResponse(c, http.StatusBadRequest,
@@ -965,8 +962,6 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 
 	// Get Machine Capabilities for the InstanceType (shared across all instances)
 	mcDAO := cdbm.NewMachineCapabilityDAO(bcih.dbSession)
-	ibpDAO := cdbm.NewInfiniBandPartitionDAO(bcih.dbSession)
-	nvllpDAO := cdbm.NewNVLinkLogicalPartitionDAO(bcih.dbSession)
 	var dbibic []cdbm.InfiniBandInterface
 	var dbnvlic []cdbm.NVLinkInterface
 
@@ -996,9 +991,9 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 		}
 
 		// (2) Batch fetch all InfiniBand Partitions in one query
-		ibpList, _, err := ibpDAO.GetAll(ctx, nil, cdbm.InfiniBandPartitionFilterInput{
+		ibpList, _, err := netSvc.GetInfiniBandPartitions(ctx, nil, cdbm.InfiniBandPartitionFilterInput{
 			InfiniBandPartitionIDs: ibpIDs,
-		}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
+		}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)})
 		if err != nil {
 			logger.Error().Err(err).Msg("error retrieving InfiniBand Partitions from DB")
 			return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve Partitions specified in request data, DB error", nil)
@@ -1127,9 +1122,9 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 				}
 			}
 
-			nvllpList, _, err := nvllpDAO.GetAll(ctx, nil, cdbm.NVLinkLogicalPartitionFilterInput{
+			nvllpList, _, err := netSvc.GetNVLinkLogicalPartitions(ctx, nil, cdbm.NVLinkLogicalPartitionFilterInput{
 				NVLinkLogicalPartitionIDs: uniqueNvllpIDs,
-			}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
+			}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)})
 			if err != nil {
 				logger.Error().Err(err).Msg("error retrieving NVLink Logical Partitions from DB")
 				return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve NVLink Logical Partitions specified in request data, DB error", nil)
@@ -1325,8 +1320,7 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 
 	var createdIfcsAll []cdbm.Interface
 	if len(ifcInputs) > 0 {
-		ifcDAO := cdbm.NewInterfaceDAO(bcih.dbSession)
-		createdIfcsAll, err = ifcDAO.CreateMultiple(ctx, tx, ifcInputs)
+		createdIfcsAll, err = netSvc.CreateMultipleInterfaces(ctx, tx, ifcInputs)
 		if err != nil {
 			logger.Error().Err(err).Msg("failed to batch create interfaces")
 			return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError,
@@ -1356,8 +1350,7 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 			}
 		}
 
-		ibifcDAO := cdbm.NewInfiniBandInterfaceDAO(bcih.dbSession)
-		createdIbIfcsAll, err = ibifcDAO.CreateMultiple(ctx, tx, ibifcInputs)
+		createdIbIfcsAll, err = netSvc.CreateMultipleInfiniBandInterfaces(ctx, tx, ibifcInputs)
 		if err != nil {
 			logger.Error().Err(err).Msg("failed to batch create InfiniBand interfaces")
 			return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError,
@@ -1384,8 +1377,7 @@ func (bcih BatchCreateInstanceHandler) Handle(c echo.Context) error {
 			}
 		}
 
-		nvlifcDAO := cdbm.NewNVLinkInterfaceDAO(bcih.dbSession)
-		createdNvlIfcsAll, err = nvlifcDAO.CreateMultiple(ctx, tx, nvlifcInputs)
+		createdNvlIfcsAll, err = netSvc.CreateMultipleNVLinkInterfaces(ctx, tx, nvlifcInputs)
 		if err != nil {
 			logger.Error().Err(err).Msg("failed to batch create NVLink interfaces")
 			return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError,

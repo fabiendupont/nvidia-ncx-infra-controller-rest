@@ -51,6 +51,7 @@ import (
 	cdbm "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/model"
 	"github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/paginator"
 	cdbp "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/paginator"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/compute/computesvc"
 	siteWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/site"
 )
 
@@ -1066,9 +1067,8 @@ func (dsh DeleteSiteHandler) Handle(c echo.Context) error {
 	}
 
 	// Check for Allocations for Site
-	aDAO := cdbm.NewAllocationDAO(dsh.dbSession)
 	allocationFilter := cdbm.AllocationFilterInput{SiteIDs: []uuid.UUID{st.ID}}
-	atotal, err := aDAO.GetCount(ctx, nil, allocationFilter)
+	atotal, err := computesvc.New(dsh.dbSession).GetAllocationsCount(ctx, nil, allocationFilter)
 	if err != nil {
 		logger.Error().Err(err).Msg("error retrieving Allocations count for Site from DB")
 		return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve Allocations count for Site", nil)

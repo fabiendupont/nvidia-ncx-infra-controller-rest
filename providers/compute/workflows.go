@@ -94,6 +94,9 @@ func (p *ComputeProvider) RegisterActivities(w tsdkWorker.Worker) {
 		wfCfg = p.workflowConfig.(*wfconfig.Config)
 	}
 	instanceManager := instanceActivity.NewManageInstance(p.dbSession, siteClientPool, p.tc, wfCfg)
+	if p.hooks != nil {
+		instanceManager.SetHooks(p.hooks)
+	}
 	w.RegisterActivity(&instanceManager)
 
 	sshKeyGroupManager := sshKeyGroupActivity.NewManageSSHKeyGroup(p.dbSession, siteClientPool)

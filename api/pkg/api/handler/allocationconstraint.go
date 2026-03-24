@@ -40,6 +40,7 @@ import (
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/handler/util/common"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/model"
 	auth "github.com/NVIDIA/ncx-infra-controller-rest/auth/pkg/authorization"
+	networkingsvc "github.com/NVIDIA/ncx-infra-controller-rest/providers/networking/networkingsvc"
 )
 
 // ~~~~~ Update Handler ~~~~~ //
@@ -317,8 +318,8 @@ func (uach UpdateAllocationConstraintHandler) Handle(c echo.Context) error {
 			}
 
 			// get parent IPBlock
-			ipbDAO := cdbm.NewIPBlockDAO(uach.dbSession)
-			dbParentIPBlock, serr := ipbDAO.GetByID(ctx, tx, ac.ResourceTypeID, nil)
+			netSvc := networkingsvc.New(uach.dbSession)
+			dbParentIPBlock, serr := netSvc.GetIPBlockByID(ctx, tx, ac.ResourceTypeID)
 			if serr != nil {
 				logger.Error().Err(serr).Msg("error getting ipblock corresponding to allocation constraint")
 				return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Error retrieving IP Block for Allocation Constraint", nil)
@@ -329,7 +330,7 @@ func (uach UpdateAllocationConstraintHandler) Handle(c echo.Context) error {
 			}
 
 			// get childIPBlock
-			existingChildIPBlock, serr := ipbDAO.GetByID(ctx, tx, *ac.DerivedResourceID, nil)
+			existingChildIPBlock, serr := netSvc.GetIPBlockByID(ctx, tx, *ac.DerivedResourceID)
 			if serr != nil {
 				logger.Error().Err(serr).Msg("error getting child ipblock corresponding to allocation constraint")
 				return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Error retrieving IP Block for Allocation Constraint", nil)
@@ -359,8 +360,7 @@ func (uach UpdateAllocationConstraintHandler) Handle(c echo.Context) error {
 			}
 
 			// check if the tenant has subnets using this ipblock
-			sDAO := cdbm.NewSubnetDAO(uach.dbSession)
-			_, sCount, serr := sDAO.GetAll(ctx, tx, subnetFilter, paginator.PageInput{}, []string{})
+			_, sCount, serr := netSvc.GetSubnets(ctx, tx, subnetFilter, paginator.PageInput{})
 			if serr != nil {
 				logger.Error().Err(serr).Msg("error getting subnets corresponding to allocation constraint")
 				return cutil.NewAPIErrorResponse(c, http.StatusInternalServerError, "Error retrieving Subnets for allocation constraint", nil)
@@ -403,7 +403,7 @@ func (uach UpdateAllocationConstraintHandler) Handle(c echo.Context) error {
 			}
 
 			// Update existind IP Block with new prefix, block size
-			_, serr = ipbDAO.Update(
+			_, serr = netSvc.UpdateIPBlock(
 				ctx,
 				tx,
 				cdbm.IPBlockUpdateInput{
