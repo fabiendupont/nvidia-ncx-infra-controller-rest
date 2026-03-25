@@ -43,6 +43,9 @@ const (
 	EventPreDeleteSubnet  = "pre-delete-subnet"
 	EventPostDeleteSubnet = "post-delete-subnet"
 
+	EventPostCreateSite = "post-create-site"
+	EventPostDeleteSite = "post-delete-site"
+
 	EventPostDeleteSiteComponents = "post-delete-site-components"
 
 	EventPreCreateInfiniBandPartition  = "pre-create-infiniband-partition"

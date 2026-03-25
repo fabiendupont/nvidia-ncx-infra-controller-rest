@@ -60,6 +60,33 @@ type ManageSite struct {
 	siteClientPool *sc.ClientPool
 	tc             client.Client
 	cfg            *config.Config
+	hooks          hookFirer
+}
+
+// hookFirer is the interface for firing lifecycle hooks. Matches
+// provider.HookFirer but defined locally to avoid import cycles.
+type hookFirer interface {
+	FireSync(ctx context.Context, feature, event string, payload interface{}) error
+	FireAsync(ctx context.Context, feature, event string, payload interface{})
+}
+
+// SetHooks sets the hook runner for firing lifecycle events.
+func (mst *ManageSite) SetHooks(hooks hookFirer) {
+	mst.hooks = hooks
+}
+
+func (mst ManageSite) fireSync(ctx context.Context, feature, event string, payload interface{}) error {
+	if mst.hooks == nil {
+		return nil
+	}
+	return mst.hooks.FireSync(ctx, feature, event, payload)
+}
+
+func (mst ManageSite) fireAsync(ctx context.Context, feature, event string, payload interface{}) {
+	if mst.hooks == nil {
+		return
+	}
+	mst.hooks.FireAsync(ctx, feature, event, payload)
 }
 
 // Activity functions
@@ -288,6 +315,9 @@ func (mst ManageSite) DeleteSiteComponentsFromDB(ctx context.Context, siteID uui
 		logger.Error().Err(err).Msg("failed to delete Site record in DB")
 		return err
 	}
+
+	// Fire post-delete hooks (async — notify dependent features)
+	mst.fireAsync(ctx, "site", "post-delete-site", siteID)
 
 	logger.Info().Msg("successfully completed activity")
 

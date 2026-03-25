@@ -15,29 +15,30 @@
  * limitations under the License.
  */
 
-package provider
+package ansiblefabric
 
-// AllFeatures is the complete list of features that NICo supports.
-var AllFeatures = []string{
-	"compute",
-	"networking",
-	"dns",
-	"health",
-	"firmware",
-	"nvswitch",
-	"site",
-	"catalog",
-	"fulfillment",
-	"showback",
-	"storage",
-	"dcim",
-	"dpf-hcp",
-	"fabric",
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestProviderName(t *testing.T) {
+	p := New(ProviderConfig{})
+	assert.Equal(t, "ansible-fabric", p.Name())
 }
 
-// FeatureStatus describes the runtime status of a feature.
-type FeatureStatus struct {
-	Status   string `json:"status"`
-	Provider string `json:"provider,omitempty"`
-	Version  string `json:"version,omitempty"`
+func TestProviderVersion(t *testing.T) {
+	p := New(ProviderConfig{})
+	assert.Equal(t, "0.1.0", p.Version())
+}
+
+func TestProviderFeatures(t *testing.T) {
+	p := New(ProviderConfig{})
+	assert.Equal(t, []string{"fabric", "ib-fabric"}, p.Features())
+}
+
+func TestProviderDependencies(t *testing.T) {
+	p := New(ProviderConfig{})
+	assert.Equal(t, []string{"nico-networking"}, p.Dependencies())
 }

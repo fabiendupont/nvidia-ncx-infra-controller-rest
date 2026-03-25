@@ -76,6 +76,9 @@ func (p *SiteProvider) RegisterActivities(w tsdkWorker.Worker) {
 		wfCfg = p.workflowConfig.(*wfconfig.Config)
 	}
 	siteManager := siteActivity.NewManageSite(p.dbSession, siteClientPool, p.tc, wfCfg)
+	if p.hooks != nil {
+		siteManager.SetHooks(p.hooks)
+	}
 	w.RegisterActivity(&siteManager)
 
 	// ExpectedMachine activities

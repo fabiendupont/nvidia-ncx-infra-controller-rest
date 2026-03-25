@@ -32,6 +32,7 @@ var stubRoutes = map[string][]string{
 	"showback":    {"/self/usage", "/self/quotas", "/services/:id/usage"},
 	"storage":     {"/:orgName/*/storage/*"},
 	"dcim":        {"/dcim/*"},
+	"dpf-hcp":     {"/sites/:siteId/dpf-hcp", "/sites/:siteId/dpf-hcp/status"},
 }
 
 // RegisterStubs registers 501 handlers for features that have no provider.

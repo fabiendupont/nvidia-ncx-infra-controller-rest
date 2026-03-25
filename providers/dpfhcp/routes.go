@@ -15,29 +15,19 @@
  * limitations under the License.
  */
 
-package provider
+package dpfhcp
 
-// AllFeatures is the complete list of features that NICo supports.
-var AllFeatures = []string{
-	"compute",
-	"networking",
-	"dns",
-	"health",
-	"firmware",
-	"nvswitch",
-	"site",
-	"catalog",
-	"fulfillment",
-	"showback",
-	"storage",
-	"dcim",
-	"dpf-hcp",
-	"fabric",
-}
+import (
+	"net/http"
 
-// FeatureStatus describes the runtime status of a feature.
-type FeatureStatus struct {
-	Status   string `json:"status"`
-	Provider string `json:"provider,omitempty"`
-	Version  string `json:"version,omitempty"`
+	echo "github.com/labstack/echo/v4"
+)
+
+// RegisterRoutes registers all DPF HCP endpoints on the given Echo group.
+func (p *DPFHCPProvider) RegisterRoutes(group *echo.Group) {
+	prefix := p.apiPathPrefix + "/sites/:siteId/dpf-hcp"
+
+	group.Add(http.MethodPost, prefix, handleProvision(p.store))
+	group.Add(http.MethodGet, prefix, handleGetStatus(p.store))
+	group.Add(http.MethodDelete, prefix, handleDelete(p.store))
 }

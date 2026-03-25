@@ -15,29 +15,21 @@
  * limitations under the License.
  */
 
-package provider
+package catalog
 
-// AllFeatures is the complete list of features that NICo supports.
-var AllFeatures = []string{
-	"compute",
-	"networking",
-	"dns",
-	"health",
-	"firmware",
-	"nvswitch",
-	"site",
-	"catalog",
-	"fulfillment",
-	"showback",
-	"storage",
-	"dcim",
-	"dpf-hcp",
-	"fabric",
-}
+import (
+	"net/http"
 
-// FeatureStatus describes the runtime status of a feature.
-type FeatureStatus struct {
-	Status   string `json:"status"`
-	Provider string `json:"provider,omitempty"`
-	Version  string `json:"version,omitempty"`
+	echo "github.com/labstack/echo/v4"
+)
+
+// RegisterRoutes registers all catalog template endpoints on the given Echo group.
+func (p *CatalogProvider) RegisterRoutes(group *echo.Group) {
+	prefix := p.apiPathPrefix + "/catalog/templates"
+
+	group.Add(http.MethodPost, prefix, handleCreateTemplate(p.store))
+	group.Add(http.MethodGet, prefix, handleListTemplates(p.store))
+	group.Add(http.MethodGet, prefix+"/:id", handleGetTemplate(p.store))
+	group.Add(http.MethodPatch, prefix+"/:id", handleUpdateTemplate(p.store))
+	group.Add(http.MethodDelete, prefix+"/:id", handleDeleteTemplate(p.store))
 }

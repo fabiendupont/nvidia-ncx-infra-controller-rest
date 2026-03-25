@@ -226,7 +226,8 @@ func Test_BodyLimit(t *testing.T) {
 	tcfg, _ := cfg.GetTemporalConfig()
 	scp := sc.NewClientPool(tcfg)
 
-	srv := InitAPIServer(cfg, dbSession, tc, tnc, scp)
+	registry := testRegistry(dbSession, tc, tnc, scp, cfg)
+	srv := InitAPIServer(cfg, dbSession, tc, tnc, scp, registry)
 
 	oversizedBody := make([]byte, 11<<20) // 11 MiB, exceeds the 10 MiB limit
 	rec := httptest.NewRecorder()

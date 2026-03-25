@@ -40,6 +40,7 @@ type SiteProvider struct {
 	temporalQueue          string
 	workflowSiteClientPool interface{}
 	workflowConfig         interface{}
+	hooks                  *provider.HookRunner
 }
 
 // New creates a new SiteProvider.
@@ -65,6 +66,7 @@ func (p *SiteProvider) Init(ctx provider.ProviderContext) error {
 	p.temporalQueue = ctx.TemporalQueue
 	p.workflowSiteClientPool = ctx.WorkflowSiteClientPool
 	p.workflowConfig = ctx.Config
+	p.hooks = ctx.Hooks
 	return nil
 }
 

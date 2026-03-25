@@ -33,12 +33,18 @@ import (
 	sc "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/client/site"
 
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/catalog"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/compute"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/dpfhcp"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/firmware"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/fulfillment"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/health"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/networking"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/nvswitch"
+	"github.com/NVIDIA/ncx-infra-controller-rest/providers/showback"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/site"
+
+	ansiblefabric "github.com/NVIDIA/ncx-infra-controller-rest/providers/ansible-fabric"
 
 	// Imports for API doc generation
 	_ "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/model"
@@ -140,7 +146,11 @@ func main() {
 		func() provider.Provider { return health.New() },
 		func() provider.Provider { return firmware.New() },
 		func() provider.Provider { return nvswitch.New() },
-		// Future: catalog.New(), fulfillment.New()
+		func() provider.Provider { return catalog.New() },
+		func() provider.Provider { return fulfillment.New() },
+		func() provider.Provider { return showback.New() },
+		func() provider.Provider { return dpfhcp.New() },
+		func() provider.Provider { return ansiblefabric.NewFromEnv() },
 	})
 
 	// Create provider registry and register providers for the active profile

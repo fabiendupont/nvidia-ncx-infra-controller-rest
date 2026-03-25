@@ -67,8 +67,13 @@ import (
 	// Site workflow triggers (cron)
 	siteWorkflow "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/workflow/site"
 
+	// Shared Ansible activity for AAP job template execution
+	ansibleActivity "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/activity/ansible"
+
 	// Provider framework
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
+	ansiblefabric "github.com/NVIDIA/ncx-infra-controller-rest/providers/ansible-fabric"
+	aapClient "github.com/NVIDIA/ncx-infra-controller-rest/providers/ansible-fabric/client"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/compute"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/health"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/networking"
@@ -215,6 +220,14 @@ func main() {
 		log.Panic().Err(err).Msg("failed to register health provider")
 	}
 
+	// Register ansible-fabric provider if AAP is configured
+	afCfg := ansiblefabric.ConfigFromEnv()
+	if afCfg.AAPURL != "" {
+		if err := registry.Register(ansiblefabric.New(afCfg)); err != nil {
+			log.Panic().Err(err).Msg("failed to register ansible-fabric provider")
+		}
+	}
+
 	if err := registry.ResolveDependencies(); err != nil {
 		log.Panic().Err(err).Msg("failed to resolve provider dependencies")
 	}
@@ -258,6 +271,23 @@ func main() {
 	if tcfg.Namespace == cwfn.CloudNamespace {
 		userManager := userActivity.NewManageUser(dbSession, cfg)
 		w.RegisterActivity(&userManager)
+	}
+
+	// Register shared Ansible activity if AAP is configured
+	if afCfg.AAPURL != "" {
+		aapC, err := aapClient.New(aapClient.Config{
+			URL:      afCfg.AAPURL,
+			Token:    afCfg.AAPToken,
+			Username: afCfg.AAPUsername,
+			Password: afCfg.AAPPassword,
+		})
+		if err != nil {
+			log.Panic().Err(err).Msg("failed to create AAP client for Ansible activity")
+		}
+		ansibleManager := ansibleActivity.NewManageAnsible(aapC, afCfg.JobTimeout, afCfg.JobPollInterval)
+		ansibleManager.SetHooks(hooks)
+		w.RegisterActivity(&ansibleManager)
+		log.Info().Msg("registered shared Ansible activity for AAP integration")
 	}
 
 	// Serve health endpoint

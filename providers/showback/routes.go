@@ -15,29 +15,22 @@
  * limitations under the License.
  */
 
-package provider
+package showback
 
-// AllFeatures is the complete list of features that NICo supports.
-var AllFeatures = []string{
-	"compute",
-	"networking",
-	"dns",
-	"health",
-	"firmware",
-	"nvswitch",
-	"site",
-	"catalog",
-	"fulfillment",
-	"showback",
-	"storage",
-	"dcim",
-	"dpf-hcp",
-	"fabric",
-}
+import (
+	"net/http"
 
-// FeatureStatus describes the runtime status of a feature.
-type FeatureStatus struct {
-	Status   string `json:"status"`
-	Provider string `json:"provider,omitempty"`
-	Version  string `json:"version,omitempty"`
+	echo "github.com/labstack/echo/v4"
+)
+
+// RegisterRoutes registers all showback-related API routes.
+func (p *ShowbackProvider) RegisterRoutes(group *echo.Group) {
+	prefix := p.apiPathPrefix
+
+	// Service usage
+	group.Add(http.MethodGet, prefix+"/services/:id/usage", p.handleGetServiceUsage)
+
+	// Tenant self-service usage and quotas
+	group.Add(http.MethodGet, prefix+"/self/usage", p.handleGetSelfUsage)
+	group.Add(http.MethodGet, prefix+"/self/quotas", p.handleGetSelfQuotas)
 }
