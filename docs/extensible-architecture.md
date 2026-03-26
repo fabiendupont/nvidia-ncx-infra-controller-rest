@@ -147,32 +147,21 @@ implementations (e.g., Netris instead of carbide-api for networking).
 |----------|----------|-------------|
 | nico-dpfhcp | dpf-hcp | DPU cluster provisioning via DPFHCPProvisioner operator |
 
-## Complementary providers
+## Alternative providers
 
-The architecture supports providers that add capabilities
-alongside existing features, reacting to events via hooks.
+The architecture supports swapping built-in providers with
+partner implementations. Example:
 
-### Netris fabric management
+### Netris networking
 
-`providers/netris-fabric/` syncs NICo tenant networking events
-to the Netris SDN Controller for physical switch configuration.
-It is **complementary** to nico-networking — Netris manages the
-physical fabric, NICo manages tenant constructs.
+`providers/netris-networking/` implements `networkingsvc.Service`
+using the Netris SDN Controller API instead of carbide-api.
 
-- Reacts to `post-create-vpc` → creates Netris VPC (VRF) on switches
-- Reacts to `post-create-subnet` → creates Netris VNET on switches
-- Reacts to `post-create-instance` → configures switch port (VLAN, MTU)
-- Validates IPAM via `pre-create-subnet` sync hook → prevents IP conflicts
+- Maps NICo VPC → Netris VPC (VRF)
+- Maps NICo IPBlock → Netris Allocation
+- Maps NICo Subnet → Netris Subnet
 - Reads credentials from `NETRIS_URL`, `NETRIS_USERNAME`, `NETRIS_PASSWORD`
-
-Integration boundary with DPF:
-
-| Layer | Controller |
-|-------|-----------|
-| Physical switches | Netris |
-| DPU hardware + OS | DPF |
-| Tenant networking | NICo |
-| Workload networking | OpenShift OVN-K |
+- Not registered in any default profile; operators select it via custom profile config
 
 ## Creating a new provider
 

@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Title** | Extensible Architecture with Pluggable Providers |
-| **Status** | Proposal |
+| **Status** | Implemented (prototype) |
 | **Authors** | Red Hat NCP Team |
 | **Created** | 2026-03-25 |
 | **Target Release** | 1.1.0 |
@@ -358,40 +358,13 @@ regression comparison.
 
 ### Partner (examples)
 
-Providers can be **complementary** (adding a new capability
-alongside existing features) or **alternative** (replacing an
-existing feature with a different backend).
-
-| Provider | Features | Type | Description |
-|----------|----------|------|-------------|
-| netris-fabric | fabric | Complementary | Syncs NICo VPC/Subnet events to Netris Controller for physical switch configuration. Runs alongside nico-networking, not instead of it. |
-| vast-storage | storage | New feature | Volume management via VAST Data API |
-| weka-storage | storage | New feature | Parallel filesystem via WEKA API |
-| infoblox-dns | dns | Alternative | DNS management via Infoblox instead of built-in |
-| netbox-dcim | dcim | New feature | Asset tracking via NetBox |
-
-#### Netris fabric integration model
-
-Netris manages the **physical switch fabric** (Spectrum-X, SONiC,
-Arista) — a layer below NICo's tenant networking. The integration
-is event-driven via hooks:
-
-```
-NICo creates VPC    →  post-create-vpc hook  →  Netris creates VPC (VRF) on switches
-NICo creates Subnet →  post-create-subnet   →  Netris creates VNET on switches
-NICo provisions Instance → post-create-instance → Netris configures switch port
-NICo creates Subnet →  pre-create-subnet    →  Validate no IPAM conflict with Netris
-```
-
-This model avoids the "three competing control planes" problem
-(OpenShift, DPF, Netris) by giving each layer a clear boundary:
-
-| Layer | Controller |
-|-------|-----------|
-| Physical switches | Netris |
-| DPU hardware + OS | DPF |
-| Tenant networking (VPC/Subnet) | NICo |
-| Workload networking (pods) | OpenShift OVN-K |
+| Provider | Features | Replaces |
+|----------|----------|----------|
+| netris-networking | networking | nico-networking |
+| vast-storage | storage | (new feature) |
+| weka-storage | storage | (new feature) |
+| infoblox-dns | dns | (new feature) |
+| netbox-dcim | dcim | (new feature) |
 
 ## Risks and mitigations
 
@@ -447,23 +420,32 @@ Split NICo into separate services per domain. Rejected because:
   Machine, Subnet) would require saga patterns
 - Multiplies operational complexity
 
-## Proof of concept
+## Implementation
 
-The `extensible-architecture` branch contains a working
-implementation with 16 commits, demonstrating:
+The `extensible-architecture` branch contains the working
+implementation:
 
-- 11 provider packages (6 core + 3 OSAC + 1 partner + 1 DPF HCP)
+- 11 provider packages (6 core + 3 OSAC + 1 Netris + 1 DPF HCP)
 - Full route migration (922→145 lines in routes.go)
 - Full workflow migration (503→347 lines in main.go)
 - 55 cross-domain handler calls migrated to service interfaces
 - 3-tier workflow hooks with firing in instance/VPC/site activities
-- Netris SDN as an alternative networking provider
-- DPF HCP provisioner with K8s dynamic client and Temporal workflows
-- Zero test regressions against `main` branch
+- 149 provider tests, zero regressions against `main` branch
+
+## Related enhancements
+
+| NEP | Title | Relationship |
+|-----|-------|-------------|
+| [NEP-0002](0002-composable-blueprints.md) | Composable Blueprints | Evolves catalog/fulfillment providers into DAG-based service definitions |
+| [NEP-0003](0003-aap-provider.md) | AAP Provider | Uses hook system for Ansible integration |
+| [NEP-0004](0004-dpf-hcp-provider.md) | DPF HCP Provider | Uses hooks, workflows, K8s client for DPU cluster automation |
+| [NEP-0005](0005-netris-fabric-provider.md) | Netris Fabric Provider | Uses hooks for physical fabric sync |
+| [NEP-0006](0006-opentofu-provider.md) | OpenTofu/Terraform Provider | External IaC provider calling NICo REST API |
+| [NEP-0007](0007-fault-management-provider.md) | Health Provider — Fault Management and Service Events | Expands nico-health with fault lifecycle, remediation workflows, tenant service events |
+| [NEP-0008](0008-external-providers.md) | External Provider Sidecar Protocol | gRPC-over-UDS protocol for partner providers as sidecar containers |
 
 ## References
 
 - [NICo Extensible Architecture Design](../extensible-architecture.md)
 - [DPF HCP Provider Documentation](../dpf-hcp-provider.md)
-- [dpf-hcp-provisioner-operator](https://github.com/rh-ecosystem-edge/dpf-hcp-provisioner-operator)
 - [Kubernetes Enhancement Proposals](https://github.com/kubernetes/enhancements)
