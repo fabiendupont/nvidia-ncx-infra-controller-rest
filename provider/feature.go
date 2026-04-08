@@ -33,6 +33,7 @@ var AllFeatures = []string{
 	"dcim",
 	"dpf-hcp",
 	"fabric",
+	"fault-management",
 }
 
 // FeatureStatus describes the runtime status of a feature.

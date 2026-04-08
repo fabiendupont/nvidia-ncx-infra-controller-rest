@@ -48,6 +48,12 @@ const (
 
 	EventPostDeleteSiteComponents = "post-delete-site-components"
 
+	EventPostHealthEventIngested = "post-health-event-ingested"
+	EventPreFaultRemediation     = "pre-fault-remediation"
+	EventPostFaultRemediation    = "post-fault-remediation"
+	EventPostFaultResolved       = "post-fault-resolved"
+	EventPostFaultEscalated      = "post-fault-escalated"
+
 	EventPreCreateInfiniBandPartition  = "pre-create-infiniband-partition"
 	EventPostCreateInfiniBandPartition = "post-create-infiniband-partition"
 	EventPreDeleteInfiniBandPartition  = "pre-delete-infiniband-partition"
