@@ -32,6 +32,7 @@ func (p *FulfillmentProvider) RegisterWorkflows(w tsdkWorker.Worker) {
 	w.RegisterWorkflow(TenantProvisioningWorkflow)
 	w.RegisterWorkflow(TenantTeardownWorkflow)
 	w.RegisterWorkflow(ServiceScaleWorkflow)
+	w.RegisterWorkflow(BlueprintExecutionWorkflow)
 }
 
 // RegisterActivities registers all fulfillment-domain Temporal activities
@@ -42,4 +43,7 @@ func (p *FulfillmentProvider) RegisterActivities(w tsdkWorker.Worker) {
 		serviceStore: p.serviceStore,
 	}
 	w.RegisterActivity(activities)
+
+	execActivities := NewExecutionActivities(p.orderStore, p.serviceStore)
+	w.RegisterActivity(execActivities)
 }

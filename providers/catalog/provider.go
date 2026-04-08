@@ -25,8 +25,10 @@ import (
 
 // CatalogProvider implements the service catalog feature provider.
 type CatalogProvider struct {
-	store         *TemplateStore
-	apiPathPrefix string
+	store            *TemplateStore
+	blueprintStore   *BlueprintStore
+	blueprintHandler *BlueprintHandler
+	apiPathPrefix    string
 }
 
 // New creates a new CatalogProvider.
@@ -41,6 +43,8 @@ func (p *CatalogProvider) Dependencies() []string  { return []string{} }
 
 func (p *CatalogProvider) Init(ctx provider.ProviderContext) error {
 	p.store = NewTemplateStore()
+	p.blueprintStore = NewBlueprintStore()
+	p.blueprintHandler = NewBlueprintHandler(p.blueprintStore)
 	p.apiPathPrefix = ctx.APIPathPrefix
 	return nil
 }

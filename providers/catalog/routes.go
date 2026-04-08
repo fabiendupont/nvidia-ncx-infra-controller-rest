@@ -32,4 +32,16 @@ func (p *CatalogProvider) RegisterRoutes(group *echo.Group) {
 	group.Add(http.MethodGet, prefix+"/:id", handleGetTemplate(p.store))
 	group.Add(http.MethodPatch, prefix+"/:id", handleUpdateTemplate(p.store))
 	group.Add(http.MethodDelete, prefix+"/:id", handleDeleteTemplate(p.store))
+
+	// Blueprint endpoints (composable service definitions)
+	if p.blueprintHandler != nil {
+		bp := p.apiPathPrefix + "/catalog/blueprints"
+		group.Add(http.MethodPost, bp, p.blueprintHandler.handleCreateBlueprint)
+		group.Add(http.MethodGet, bp, p.blueprintHandler.handleListBlueprints)
+		group.Add(http.MethodGet, bp+"/:id", p.blueprintHandler.handleGetBlueprint)
+		group.Add(http.MethodPatch, bp+"/:id", p.blueprintHandler.handleUpdateBlueprint)
+		group.Add(http.MethodDelete, bp+"/:id", p.blueprintHandler.handleDeleteBlueprint)
+		group.Add(http.MethodPost, bp+"/:id/validate", p.blueprintHandler.handleValidateBlueprint)
+		group.Add(http.MethodGet, p.apiPathPrefix+"/catalog/resource-types", p.blueprintHandler.handleListResourceTypes)
+	}
 }
