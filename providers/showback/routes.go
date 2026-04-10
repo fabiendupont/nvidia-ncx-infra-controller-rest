@@ -32,5 +32,6 @@ func (p *ShowbackProvider) RegisterRoutes(group *echo.Group) {
 
 	// Tenant self-service usage and quotas
 	group.Add(http.MethodGet, prefix+"/self/usage", p.handleGetSelfUsage)
+	group.Add(http.MethodGet, prefix+"/self/usage/costs", p.handleGetSelfUsageCosts)
 	group.Add(http.MethodGet, prefix+"/self/quotas", p.handleGetSelfQuotas)
 }

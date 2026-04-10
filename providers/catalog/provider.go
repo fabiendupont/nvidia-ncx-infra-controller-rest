@@ -20,14 +20,16 @@ package catalog
 import (
 	"context"
 
+	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 )
 
 // CatalogProvider implements the service catalog feature provider.
 type CatalogProvider struct {
 	store            *TemplateStore
-	blueprintStore   *BlueprintStore
+	blueprintStore   BlueprintStoreInterface
 	blueprintHandler *BlueprintHandler
+	dbSession        *cdb.Session
 	apiPathPrefix    string
 }
 
@@ -42,10 +44,20 @@ func (p *CatalogProvider) Features() []string      { return []string{"catalog"} 
 func (p *CatalogProvider) Dependencies() []string  { return []string{} }
 
 func (p *CatalogProvider) Init(ctx provider.ProviderContext) error {
-	p.store = NewTemplateStore()
-	p.blueprintStore = NewBlueprintStore()
-	p.blueprintHandler = NewBlueprintHandler(p.blueprintStore)
 	p.apiPathPrefix = ctx.APIPathPrefix
+
+	// Template store remains in-memory (deprecated, will be removed)
+	p.store = NewTemplateStore()
+
+	// Blueprint store: use PostgreSQL if DB is available, else in-memory
+	if ctx.DB != nil {
+		p.dbSession = ctx.DB
+		p.blueprintStore = NewBlueprintSQLStore(ctx.DB)
+	} else {
+		p.blueprintStore = NewBlueprintStore()
+	}
+
+	p.blueprintHandler = NewBlueprintHandler(p.blueprintStore)
 	return nil
 }
 

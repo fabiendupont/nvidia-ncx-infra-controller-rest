@@ -162,12 +162,12 @@ type ResourceRef struct {
 
 // ExecutionActivities handles individual resource CRUD for the DAG executor.
 type ExecutionActivities struct {
-	orderStore   *OrderStore
-	serviceStore *ServiceStore
+	orderStore   OrderStoreInterface
+	serviceStore ServiceStoreInterface
 }
 
 // NewExecutionActivities creates execution activities.
-func NewExecutionActivities(orderStore *OrderStore, serviceStore *ServiceStore) *ExecutionActivities {
+func NewExecutionActivities(orderStore OrderStoreInterface, serviceStore ServiceStoreInterface) *ExecutionActivities {
 	return &ExecutionActivities{
 		orderStore:   orderStore,
 		serviceStore: serviceStore,

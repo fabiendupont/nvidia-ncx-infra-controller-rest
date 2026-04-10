@@ -94,6 +94,20 @@ func (s *OrderStore) List() []*Order {
 	return result
 }
 
+// ListByTenant returns all orders for a given tenant.
+func (s *OrderStore) ListByTenant(tenantID uuid.UUID) []*Order {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var result []*Order
+	for _, o := range s.orders {
+		if o.TenantID == tenantID {
+			copy := *o
+			result = append(result, &copy)
+		}
+	}
+	return result
+}
+
 // ServiceStore is a thread-safe in-memory store for services.
 type ServiceStore struct {
 	mu       sync.RWMutex

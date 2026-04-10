@@ -20,16 +20,17 @@ package catalog
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
 // BlueprintHandler handles blueprint API requests.
 type BlueprintHandler struct {
-	store *BlueprintStore
+	store BlueprintStoreInterface
 }
 
 // NewBlueprintHandler creates a new handler.
-func NewBlueprintHandler(store *BlueprintStore) *BlueprintHandler {
+func NewBlueprintHandler(store BlueprintStoreInterface) *BlueprintHandler {
 	return &BlueprintHandler{store: store}
 }
 
@@ -37,6 +38,49 @@ func (h *BlueprintHandler) handleCreateBlueprint(c echo.Context) error {
 	var b Blueprint
 	if err := c.Bind(&b); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid_request", "message": err.Error()})
+	}
+
+	// Set default visibility
+	if b.Visibility == "" {
+		if b.TenantID != nil {
+			b.Visibility = VisibilityOrganization
+		} else {
+			b.Visibility = VisibilityPublic
+		}
+	}
+
+	// Validate visibility value
+	if b.Visibility != VisibilityPublic && b.Visibility != VisibilityOrganization && b.Visibility != VisibilityPrivate {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "validation_error", "message": "visibility must be public, organization, or private"})
+	}
+
+	// Validate pricing if provided
+	if b.Pricing != nil {
+		if b.Pricing.Rate < 0 {
+			return c.JSON(http.StatusBadRequest, echo.Map{"error": "validation_error", "message": "pricing rate must be non-negative"})
+		}
+		if b.Pricing.Unit == "" {
+			return c.JSON(http.StatusBadRequest, echo.Map{"error": "validation_error", "message": "pricing unit is required (hour, month, one-time)"})
+		}
+		if b.Pricing.Currency == "" {
+			b.Pricing.Currency = "USD"
+		}
+	}
+
+	// Validate based_on reference if provided
+	if b.BasedOn != "" {
+		parent, err := h.store.GetByID(extractBlueprintID(b.BasedOn))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, echo.Map{"error": "validation_error", "message": "based_on references a blueprint that does not exist"})
+		}
+		// If no resources defined, the variant inherits the parent as a single-node DAG
+		if len(b.Resources) == 0 {
+			b.Resources = map[string]BlueprintResource{
+				"base": {
+					Type: "blueprint/" + parent.Name,
+				},
+			}
+		}
 	}
 
 	result := ValidateBlueprint(&b)
@@ -56,6 +100,26 @@ func (h *BlueprintHandler) handleListBlueprints(c echo.Context) error {
 	if blueprints == nil {
 		blueprints = []*Blueprint{}
 	}
+
+	// Filter by tenant visibility if tenant_id query param is provided
+	tenantParam := c.QueryParam("tenant_id")
+	if tenantParam != "" {
+		tenantID, err := uuid.Parse(tenantParam)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid_id", "message": "invalid tenant_id"})
+		}
+		var filtered []*Blueprint
+		for _, bp := range blueprints {
+			// Include: provider-published (public) OR same tenant's blueprints
+			if bp.TenantID == nil && bp.Visibility == VisibilityPublic {
+				filtered = append(filtered, bp)
+			} else if bp.TenantID != nil && *bp.TenantID == tenantID {
+				filtered = append(filtered, bp)
+			}
+		}
+		blueprints = filtered
+	}
+
 	return c.JSON(http.StatusOK, blueprints)
 }
 
@@ -98,6 +162,12 @@ func (h *BlueprintHandler) handleUpdateBlueprint(c echo.Context) error {
 	if update.Labels != nil {
 		existing.Labels = update.Labels
 	}
+	if update.Pricing != nil {
+		existing.Pricing = update.Pricing
+	}
+	if update.Visibility != "" {
+		existing.Visibility = update.Visibility
+	}
 
 	result := ValidateBlueprint(existing)
 	if !result.Valid {
@@ -129,6 +199,114 @@ func (h *BlueprintHandler) handleValidateBlueprint(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
+// handleResolvedBlueprint returns the effective blueprint after variant resolution.
+// Locked parameters are excluded from the response.
+// GET /catalog/blueprints/:id/resolved
+func (h *BlueprintHandler) handleResolvedBlueprint(c echo.Context) error {
+	id := c.Param("id")
+	b, err := h.store.GetByID(id)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{"error": "not_found", "message": err.Error()})
+	}
+
+	resolved, err := ResolveBlueprint(b, h.store)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "resolve_failed", "message": err.Error()})
+	}
+
+	// Filter out locked parameters — they are enforced but not shown in the ordering form.
+	resolved.Parameters = FilterUnlockedParameters(resolved.Parameters)
+
+	return c.JSON(http.StatusOK, resolved)
+}
+
 func (h *BlueprintHandler) handleListResourceTypes(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"resource_types": AvailableResourceTypes})
+}
+
+// handleEstimateCost returns a cost estimate for a blueprint with given parameters.
+// POST /catalog/blueprints/:id/estimate
+func (h *BlueprintHandler) handleEstimateCost(c echo.Context) error {
+	id := c.Param("id")
+	b, err := h.store.GetByID(id)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{"error": "not_found", "message": err.Error()})
+	}
+
+	// If the blueprint has explicit pricing, return it directly
+	if b.Pricing != nil {
+		return c.JSON(http.StatusOK, CostEstimate{
+			EstimatedRate: b.Pricing.Rate,
+			Unit:          b.Pricing.Unit,
+			Currency:      b.Pricing.Currency,
+			Breakdown:     []CostBreakdownItem{{Blueprint: b.Name, Rate: b.Pricing.Rate}},
+		})
+	}
+
+	// Walk the DAG to sum pricing from constituent blueprints
+	var totalRate float64
+	var breakdown []CostBreakdownItem
+	unit := "hour"
+	currency := "USD"
+
+	for _, res := range b.Resources {
+		if extractBlueprintName(res.Type) != "" {
+			refName := extractBlueprintName(res.Type)
+			refID := extractBlueprintID(refName)
+			child, err := h.store.GetByID(refID)
+			if err != nil {
+				continue
+			}
+			if child.Pricing != nil {
+				totalRate += child.Pricing.Rate
+				unit = child.Pricing.Unit
+				currency = child.Pricing.Currency
+				breakdown = append(breakdown, CostBreakdownItem{
+					Blueprint: child.Name,
+					Rate:      child.Pricing.Rate,
+				})
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, CostEstimate{
+		EstimatedRate: totalRate,
+		Unit:          unit,
+		Currency:      currency,
+		Breakdown:     breakdown,
+	})
+}
+
+// CostEstimate represents the estimated cost for a blueprint.
+type CostEstimate struct {
+	EstimatedRate float64             `json:"estimated_rate"`
+	Unit          string              `json:"unit"`
+	Currency      string              `json:"currency"`
+	Breakdown     []CostBreakdownItem `json:"breakdown"`
+}
+
+// CostBreakdownItem shows the cost contribution of a sub-blueprint.
+type CostBreakdownItem struct {
+	Blueprint string  `json:"blueprint"`
+	Rate      float64 `json:"rate"`
+}
+
+// extractBlueprintName returns the blueprint name from a "blueprint/name" or
+// "blueprint/name@version" resource type. Returns empty string if not a blueprint type.
+func extractBlueprintName(resType string) string {
+	if len(resType) > 10 && resType[:10] == "blueprint/" {
+		return resType[10:]
+	}
+	return ""
+}
+
+// extractBlueprintID strips version pins like "@1.0.0" from a blueprint reference
+// and returns the name or ID portion.
+func extractBlueprintID(ref string) string {
+	for i, c := range ref {
+		if c == '@' {
+			return ref[:i]
+		}
+	}
+	return ref
 }

@@ -33,7 +33,7 @@ type ValidationResult struct {
 
 // ValidateBlueprint checks a blueprint for structural correctness:
 // name/version present, valid resource types, valid dependency refs,
-// no cycles, and valid expression syntax.
+// no cycles, valid expression syntax, and tenant constraints.
 func ValidateBlueprint(b *Blueprint) ValidationResult {
 	var errs []string
 
@@ -49,6 +49,12 @@ func ValidateBlueprint(b *Blueprint) ValidationResult {
 		if !isValidResourceType(res.Type) {
 			errs = append(errs, fmt.Sprintf("resource %q: unknown type %q", name, res.Type))
 		}
+
+		// Tenant-owned blueprints can only reference blueprint/* types, not nico/*
+		if b.IsTenantOwned() && !strings.HasPrefix(res.Type, "blueprint/") {
+			errs = append(errs, fmt.Sprintf("resource %q: tenant blueprints can only reference blueprint/* types, not %q", name, res.Type))
+		}
+
 		for _, dep := range res.DependsOn {
 			if _, ok := b.Resources[dep]; !ok {
 				errs = append(errs, fmt.Sprintf("resource %q: depends_on %q does not exist", name, dep))
@@ -72,9 +78,21 @@ func ValidateBlueprint(b *Blueprint) ValidationResult {
 		}
 	}
 
+	// Check total resource count
+	if len(b.Resources) > MaxResourceCount {
+		errs = append(errs, fmt.Sprintf("blueprint has %d resources, maximum is %d", len(b.Resources), MaxResourceCount))
+	}
+
 	// Check for cycles
 	if err := detectCycles(b.Resources); err != nil {
 		errs = append(errs, err.Error())
+	}
+
+	// Validate pricing if present
+	if b.Pricing != nil {
+		if b.Pricing.Unit != "hour" && b.Pricing.Unit != "month" && b.Pricing.Unit != "one-time" {
+			errs = append(errs, fmt.Sprintf("pricing unit must be hour, month, or one-time, got %q", b.Pricing.Unit))
+		}
 	}
 
 	return ValidationResult{Valid: len(errs) == 0, Errors: errs}

@@ -32,6 +32,7 @@ func (p *FulfillmentProvider) RegisterRoutes(group *echo.Group) {
 
 	// Order endpoints
 	group.Add(http.MethodPost, prefix+"/catalog/orders", orderHandler.Create)
+	group.Add(http.MethodGet, prefix+"/catalog/orders", orderHandler.List)
 	group.Add(http.MethodGet, prefix+"/catalog/orders/:id", orderHandler.Get)
 	group.Add(http.MethodDelete, prefix+"/catalog/orders/:id", orderHandler.Cancel)
 

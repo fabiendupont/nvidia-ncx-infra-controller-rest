@@ -42,11 +42,11 @@ type updateServiceRequest struct {
 
 // OrderHandler handles order-related HTTP requests.
 type OrderHandler struct {
-	orders *OrderStore
+	orders OrderStoreInterface
 }
 
 // NewOrderHandler creates a new OrderHandler.
-func NewOrderHandler(orders *OrderStore) *OrderHandler {
+func NewOrderHandler(orders OrderStoreInterface) *OrderHandler {
 	return &OrderHandler{orders: orders}
 }
 
@@ -98,6 +98,38 @@ func (h *OrderHandler) Get(c echo.Context) error {
 	return c.JSON(http.StatusOK, order)
 }
 
+// List handles GET requests to list orders with optional tenant and status filtering.
+func (h *OrderHandler) List(c echo.Context) error {
+	tenantParam := c.QueryParam("tenant_id")
+	statusParam := c.QueryParam("status")
+
+	var orders []*Order
+	if tenantParam != "" {
+		tenantID, err := uuid.Parse(tenantParam)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid_id", "message": "invalid tenant_id"})
+		}
+		orders = h.orders.ListByTenant(tenantID)
+	} else {
+		orders = h.orders.List()
+	}
+
+	if statusParam != "" {
+		var filtered []*Order
+		for _, o := range orders {
+			if string(o.Status) == statusParam {
+				filtered = append(filtered, o)
+			}
+		}
+		orders = filtered
+	}
+
+	if orders == nil {
+		orders = []*Order{}
+	}
+	return c.JSON(http.StatusOK, orders)
+}
+
 // Cancel handles DELETE requests to cancel an order.
 func (h *OrderHandler) Cancel(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
@@ -121,11 +153,11 @@ func (h *OrderHandler) Cancel(c echo.Context) error {
 
 // ServiceHandler handles service-related HTTP requests.
 type ServiceHandler struct {
-	services *ServiceStore
+	services ServiceStoreInterface
 }
 
 // NewServiceHandler creates a new ServiceHandler.
-func NewServiceHandler(services *ServiceStore) *ServiceHandler {
+func NewServiceHandler(services ServiceStoreInterface) *ServiceHandler {
 	return &ServiceHandler{services: services}
 }
 

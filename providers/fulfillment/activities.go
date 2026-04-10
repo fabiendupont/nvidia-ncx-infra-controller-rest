@@ -29,8 +29,8 @@ import (
 // FulfillmentActivities holds the dependencies needed by fulfillment
 // workflow activities.
 type FulfillmentActivities struct {
-	orderStore   *OrderStore
-	serviceStore *ServiceStore
+	orderStore   OrderStoreInterface
+	serviceStore ServiceStoreInterface
 }
 
 // ValidateOrder validates that the given order exists and its template

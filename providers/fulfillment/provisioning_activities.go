@@ -35,12 +35,12 @@ import (
 type ProvisioningActivities struct {
 	networkingSvc networkingsvc.Service
 	computeSvc    computesvc.Service
-	serviceStore  *ServiceStore
+	serviceStore  ServiceStoreInterface
 }
 
 // NewProvisioningActivities creates provisioning activities wired to
 // the networking and compute service interfaces.
-func NewProvisioningActivities(netSvc networkingsvc.Service, compSvc computesvc.Service, serviceStore *ServiceStore) *ProvisioningActivities {
+func NewProvisioningActivities(netSvc networkingsvc.Service, compSvc computesvc.Service, serviceStore ServiceStoreInterface) *ProvisioningActivities {
 	return &ProvisioningActivities{
 		networkingSvc: netSvc,
 		computeSvc:    compSvc,

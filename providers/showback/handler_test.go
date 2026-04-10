@@ -41,12 +41,14 @@ func TestHandleGetServiceUsage_Found(t *testing.T) {
 	resourceID := uuid.New()
 	serviceID := uuid.New()
 
-	p.store.StartMetering(tenantID, resourceID, "gpu-hours")
+	// Use the concrete in-memory store to access internal fields for test setup.
+	memStore := p.store.(*UsageStore)
+	memStore.StartMetering(tenantID, resourceID, "gpu-hours")
 	// Set ServiceID on the record.
-	for _, rec := range p.store.records {
+	for _, rec := range memStore.records {
 		rec.ServiceID = serviceID
 	}
-	err := p.store.StopMetering(resourceID)
+	err := memStore.StopMetering(resourceID)
 	require.NoError(t, err)
 
 	e := echo.New()

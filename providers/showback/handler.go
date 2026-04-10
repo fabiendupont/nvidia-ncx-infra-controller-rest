@@ -106,3 +106,47 @@ func (p *ShowbackProvider) handleGetSelfQuotas(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, info)
 }
+
+// handleGetSelfUsageCosts returns usage with cost breakdown for the current tenant.
+// Costs are derived from usage metrics. Rate integration with blueprint pricing
+// will be wired in when the catalog provider is accessible from showback.
+func (p *ShowbackProvider) handleGetSelfUsageCosts(c echo.Context) error {
+	tenantIDStr := c.Get("tenant_id")
+	if tenantIDStr == nil {
+		return c.JSON(http.StatusUnauthorized, echo.Map{"error": "unauthorized", "message": "tenant_id not found in auth context"})
+	}
+
+	str, ok := tenantIDStr.(string)
+	if !ok || str == "" {
+		return c.JSON(http.StatusUnauthorized, echo.Map{"error": "unauthorized", "message": "tenant_id not found in auth context"})
+	}
+
+	tenantID, err := uuid.Parse(str)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid_id", "message": "invalid tenant_id"})
+	}
+
+	usage := p.store.GetUsageByTenant(tenantID)
+
+	costs := make(map[string]CostDetail)
+	var totalCost float64
+	for metric, quantity := range usage.Metrics {
+		// Rate will be populated from blueprint pricing when integrated.
+		// For now, return the quantity with zero rate.
+		costs[metric] = CostDetail{
+			Quantity: quantity,
+			Rate:     0,
+			Unit:     metric,
+			Cost:     0,
+		}
+	}
+
+	return c.JSON(http.StatusOK, UsageCostSummary{
+		TenantID:  tenantID,
+		Period:    "current-month",
+		Metrics:   usage.Metrics,
+		Costs:     costs,
+		TotalCost: totalCost,
+		Currency:  "USD",
+	})
+}

@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/compute"
 	"github.com/NVIDIA/ncx-infra-controller-rest/providers/networking"
@@ -28,8 +29,9 @@ import (
 
 // FulfillmentProvider implements the fulfillment feature provider.
 type FulfillmentProvider struct {
-	orderStore    *OrderStore
-	serviceStore  *ServiceStore
+	orderStore    OrderStoreInterface
+	serviceStore  ServiceStoreInterface
+	dbSession     *cdb.Session
 	apiPathPrefix string
 	networking    *networking.NetworkingProvider
 	compute       *compute.ComputeProvider
@@ -48,9 +50,17 @@ func (p *FulfillmentProvider) Dependencies() []string {
 }
 
 func (p *FulfillmentProvider) Init(ctx provider.ProviderContext) error {
-	p.orderStore = NewOrderStore()
-	p.serviceStore = NewServiceStore()
 	p.apiPathPrefix = ctx.APIPathPrefix
+
+	// Use PostgreSQL if DB is available, else in-memory
+	if ctx.DB != nil {
+		p.dbSession = ctx.DB
+		p.orderStore = NewOrderSQLStore(ctx.DB)
+		p.serviceStore = NewServiceSQLStore(ctx.DB)
+	} else {
+		p.orderStore = NewOrderStore()
+		p.serviceStore = NewServiceStore()
+	}
 
 	if ctx.Registry != nil {
 		if np, ok := ctx.Registry.Get("nico-networking"); ok {

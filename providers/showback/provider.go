@@ -20,12 +20,14 @@ package showback
 import (
 	"context"
 
+	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 )
 
 // ShowbackProvider implements the showback feature provider.
 type ShowbackProvider struct {
-	store         *UsageStore
+	store         UsageStoreInterface
+	dbSession     *cdb.Session
 	apiPathPrefix string
 }
 
@@ -40,8 +42,16 @@ func (p *ShowbackProvider) Features() []string     { return []string{"showback"}
 func (p *ShowbackProvider) Dependencies() []string { return []string{"nico-compute"} }
 
 func (p *ShowbackProvider) Init(ctx provider.ProviderContext) error {
-	p.store = NewUsageStore()
 	p.apiPathPrefix = ctx.APIPathPrefix
+
+	// Use PostgreSQL if DB is available, else in-memory
+	if ctx.DB != nil {
+		p.dbSession = ctx.DB
+		p.store = NewUsageSQLStore(ctx.DB)
+	} else {
+		p.store = NewUsageStore()
+	}
+
 	p.registerHooks(ctx.Registry)
 	return nil
 }
