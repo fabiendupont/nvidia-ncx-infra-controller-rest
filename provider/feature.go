@@ -35,6 +35,7 @@ var AllFeatures = []string{
 	"fabric",
 	"ansible-fabric",
 	"ib-fabric",
+	"spectrum-fabric",
 	"fault-management",
 }
 
