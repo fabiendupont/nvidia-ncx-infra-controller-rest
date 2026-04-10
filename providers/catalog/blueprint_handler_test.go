@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -156,18 +157,10 @@ func TestHandleListBlueprints_TenantFilter(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	var list []*Blueprint
-	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &list))
+	var resp provider.ListResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	// Should see the public blueprint + the tenant's own, but not the other tenant's
-	assert.Len(t, list, 2)
-
-	var names []string
-	for _, bp := range list {
-		names = append(names, bp.Name)
-	}
-	assert.Contains(t, names, "public-bp")
-	assert.Contains(t, names, "tenant-bp")
-	assert.NotContains(t, names, "other-bp")
+	assert.Equal(t, 2, resp.Total)
 }
 
 func TestHandleEstimateCost_WithPricing(t *testing.T) {

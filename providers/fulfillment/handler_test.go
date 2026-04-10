@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -132,6 +133,126 @@ func TestOrderHandler_Cancel_NotFound(t *testing.T) {
 	err := handler.Cancel(c)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, rec.Code)
+}
+
+func TestOrderHandler_List_All(t *testing.T) {
+	e := echo.New()
+	store := NewOrderStore()
+	handler := NewOrderHandler(store)
+
+	require.NoError(t, store.Create(newTestOrder()))
+	require.NoError(t, store.Create(newTestOrder()))
+
+	req := httptest.NewRequest(http.MethodGet, "/catalog/orders", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := handler.List(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp provider.ListResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	assert.Equal(t, 2, resp.Total)
+}
+
+func TestOrderHandler_List_ByTenant(t *testing.T) {
+	e := echo.New()
+	store := NewOrderStore()
+	handler := NewOrderHandler(store)
+
+	tenantA := uuid.New()
+	tenantB := uuid.New()
+
+	o1 := newTestOrder()
+	o1.TenantID = tenantA
+	o2 := newTestOrder()
+	o2.TenantID = tenantB
+
+	require.NoError(t, store.Create(o1))
+	require.NoError(t, store.Create(o2))
+
+	req := httptest.NewRequest(http.MethodGet, "/catalog/orders?tenant_id="+tenantA.String(), nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := handler.List(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp provider.ListResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	assert.Equal(t, 1, resp.Total)
+}
+
+func TestOrderHandler_List_ByStatus(t *testing.T) {
+	e := echo.New()
+	store := NewOrderStore()
+	handler := NewOrderHandler(store)
+
+	o1 := newTestOrder()
+	o1.Status = OrderStatusPending
+	o2 := newTestOrder()
+	o2.Status = OrderStatusReady
+
+	require.NoError(t, store.Create(o1))
+	require.NoError(t, store.Create(o2))
+
+	req := httptest.NewRequest(http.MethodGet, "/catalog/orders?status=Ready", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := handler.List(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp provider.ListResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	assert.Equal(t, 1, resp.Total)
+}
+
+func TestOrderHandler_List_Empty(t *testing.T) {
+	e := echo.New()
+	store := NewOrderStore()
+	handler := NewOrderHandler(store)
+
+	req := httptest.NewRequest(http.MethodGet, "/catalog/orders", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := handler.List(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp provider.ListResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	assert.Equal(t, 0, resp.Total)
+}
+
+func TestOrderHandler_List_Pagination(t *testing.T) {
+	e := echo.New()
+	store := NewOrderStore()
+	handler := NewOrderHandler(store)
+
+	for i := 0; i < 5; i++ {
+		require.NoError(t, store.Create(newTestOrder()))
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/catalog/orders?offset=2&limit=2", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := handler.List(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp provider.ListResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	assert.Equal(t, 5, resp.Total)
+	assert.Equal(t, 2, resp.Offset)
+	assert.Equal(t, 2, resp.Limit)
+	items := resp.Items.([]interface{})
+	assert.Len(t, items, 2)
 }
 
 // --- ServiceHandler tests ---

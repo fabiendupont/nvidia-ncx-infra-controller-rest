@@ -20,6 +20,7 @@ package catalog
 import (
 	"net/http"
 
+	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
@@ -120,7 +121,20 @@ func (h *BlueprintHandler) handleListBlueprints(c echo.Context) error {
 		blueprints = filtered
 	}
 
-	return c.JSON(http.StatusOK, blueprints)
+	offset, limit := provider.ParsePagination(c)
+	total := len(blueprints)
+	start, end := provider.Paginate(total, offset, limit)
+	page := blueprints[start:end]
+	if page == nil {
+		page = []*Blueprint{}
+	}
+
+	return c.JSON(http.StatusOK, provider.ListResponse{
+		Items:  page,
+		Total:  total,
+		Offset: offset,
+		Limit:  limit,
+	})
 }
 
 func (h *BlueprintHandler) handleGetBlueprint(c echo.Context) error {

@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 	echo "github.com/labstack/echo/v4"
 
 	"github.com/google/uuid"
@@ -127,7 +128,21 @@ func (h *OrderHandler) List(c echo.Context) error {
 	if orders == nil {
 		orders = []*Order{}
 	}
-	return c.JSON(http.StatusOK, orders)
+
+	offset, limit := provider.ParsePagination(c)
+	total := len(orders)
+	start, end := provider.Paginate(total, offset, limit)
+	page := orders[start:end]
+	if page == nil {
+		page = []*Order{}
+	}
+
+	return c.JSON(http.StatusOK, provider.ListResponse{
+		Items:  page,
+		Total:  total,
+		Offset: offset,
+		Limit:  limit,
+	})
 }
 
 // Cancel handles DELETE requests to cancel an order.
