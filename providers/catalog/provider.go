@@ -64,3 +64,8 @@ func (p *CatalogProvider) Init(ctx provider.ProviderContext) error {
 func (p *CatalogProvider) Shutdown(_ context.Context) error {
 	return nil
 }
+
+// BlueprintStore returns the blueprint store for cross-provider access.
+func (p *CatalogProvider) BlueprintStore() BlueprintStoreInterface {
+	return p.blueprintStore
+}
