@@ -108,8 +108,7 @@ func (p *ShowbackProvider) handleGetSelfQuotas(c echo.Context) error {
 }
 
 // handleGetSelfUsageCosts returns usage with cost breakdown for the current tenant.
-// Costs are derived from usage metrics. Rate integration with blueprint pricing
-// will be wired in when the catalog provider is accessible from showback.
+// Costs are derived from usage metrics multiplied by the rate table.
 func (p *ShowbackProvider) handleGetSelfUsageCosts(c echo.Context) error {
 	tenantIDStr := c.Get("tenant_id")
 	if tenantIDStr == nil {
@@ -130,14 +129,21 @@ func (p *ShowbackProvider) handleGetSelfUsageCosts(c echo.Context) error {
 
 	costs := make(map[string]CostDetail)
 	var totalCost float64
+	currency := "USD"
+
 	for metric, quantity := range usage.Metrics {
-		// Rate will be populated from blueprint pricing when integrated.
-		// For now, return the quantity with zero rate.
+		rate := 0.0
+		if entry, ok := p.rates[metric]; ok {
+			rate = entry.Rate
+			currency = entry.Currency
+		}
+		cost := quantity * rate
+		totalCost += cost
 		costs[metric] = CostDetail{
 			Quantity: quantity,
-			Rate:     0,
+			Rate:     rate,
 			Unit:     metric,
-			Cost:     0,
+			Cost:     cost,
 		}
 	}
 
@@ -147,6 +153,6 @@ func (p *ShowbackProvider) handleGetSelfUsageCosts(c echo.Context) error {
 		Metrics:   usage.Metrics,
 		Costs:     costs,
 		TotalCost: totalCost,
-		Currency:  "USD",
+		Currency:  currency,
 	})
 }

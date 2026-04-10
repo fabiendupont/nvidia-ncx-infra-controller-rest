@@ -24,9 +24,16 @@ import (
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 )
 
+// RateEntry describes the cost of one unit of a usage metric.
+type RateEntry struct {
+	Rate     float64 // cost per unit
+	Currency string  // ISO 4217
+}
+
 // ShowbackProvider implements the showback feature provider.
 type ShowbackProvider struct {
 	store         UsageStoreInterface
+	rates         map[string]RateEntry // metric name → rate
 	dbSession     *cdb.Session
 	apiPathPrefix string
 }
@@ -52,8 +59,22 @@ func (p *ShowbackProvider) Init(ctx provider.ProviderContext) error {
 		p.store = NewUsageStore()
 	}
 
+	// Default rate table — maps metric names to per-unit costs.
+	// These can be overridden by configuration or populated from
+	// catalog blueprint pricing at a higher level.
+	p.rates = map[string]RateEntry{
+		"gpu-hours":        {Rate: 10.00, Currency: "USD"},
+		"storage-gb-hours": {Rate: 0.015, Currency: "USD"},
+	}
+
 	p.registerHooks(ctx.Registry)
 	return nil
+}
+
+// SetRates replaces the rate table. Used by the main binary to inject
+// rates derived from catalog blueprint pricing.
+func (p *ShowbackProvider) SetRates(rates map[string]RateEntry) {
+	p.rates = rates
 }
 
 func (p *ShowbackProvider) Shutdown(_ context.Context) error {
