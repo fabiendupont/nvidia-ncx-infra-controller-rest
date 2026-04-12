@@ -38,7 +38,7 @@
 //  3. Apply (commit) the revision
 //  4. Poll until the apply completes
 //
-// The actual NVUE REST client is provided by the github.com/NVIDIA/nvue-client-go
-// package, which is being developed in parallel. Functions in sync.go contain
-// TODO markers where the client calls will be wired in.
+// The NVUE REST client is provided by the github.com/NVIDIA/nvue-client-go
+// package. The sync functions use its ConfigureAndApply helper for create
+// operations and explicit revision + delete + apply for removal operations.
 package spectrumfabric

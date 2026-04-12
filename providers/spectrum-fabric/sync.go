@@ -22,6 +22,8 @@ import (
 	"fmt"
 
 	"github.com/rs/zerolog/log"
+
+	"github.com/fabiendupont/nvidia-nvue-client-go/pkg/nvue"
 )
 
 // SyncVPCToFabric creates a VRF on the Spectrum switches that corresponds
@@ -57,46 +59,34 @@ func (p *SpectrumFabricProvider) SyncVPCToFabric(ctx context.Context, vpcID, vpc
 		Str("vpc_name", vpcName).
 		Msg("creating VRF on Spectrum fabric via NVUE")
 
-	// TODO: Implement NVUE API calls when nvue-client-go is available.
-	//
-	// The expected NVUE revision workflow:
-	//
-	// // 1. Create a new revision
-	// rev, err := p.client.CreateRevision(ctx)
-	// if err != nil {
-	// 	return fmt.Errorf("creating NVUE revision: %w", err)
-	// }
-	//
-	// // 2. PATCH the VRF configuration
-	// // NVUE path: /vrf/{name}
-	// vrfConfig := map[string]interface{}{
-	// 	"router": map[string]interface{}{
-	// 		"bgp": map[string]interface{}{
-	// 			"autonomous-system": 65000, // TODO: from config
-	// 			"enable":            "on",
-	// 			"router-id":         "auto",
-	// 		},
-	// 	},
-	// 	"evpn": map[string]interface{}{
-	// 		"enable": "on",
-	// 	},
-	// }
-	// err = p.client.PatchVRF(ctx, rev.ID, vrfName, vrfConfig)
-	// if err != nil {
-	// 	return fmt.Errorf("patching VRF %s: %w", vrfName, err)
-	// }
-	//
-	// // 3. Apply the revision
-	// err = p.client.ApplyRevision(ctx, rev.ID)
-	// if err != nil {
-	// 	return fmt.Errorf("applying revision %s: %w", rev.ID, err)
-	// }
-	//
-	// // 4. Wait for the apply to complete
-	// err = p.client.WaitForRevision(ctx, rev.ID, p.config.RevisionPollInterval, p.config.RevisionTimeout)
-	// if err != nil {
-	// 	return fmt.Errorf("waiting for revision %s: %w", rev.ID, err)
-	// }
+	vrfConfig := map[string]any{
+		"router": map[string]any{
+			"bgp": map[string]any{
+				"enable":    "on",
+				"router-id": "auto",
+				"address-family": map[string]any{
+					"ipv4-unicast": map[string]any{
+						"enable":        "on",
+						"redistribute":  map[string]any{"connected": map[string]any{"enable": "on"}},
+						"route-export":  map[string]any{"to-evpn": map[string]any{"enable": "on"}},
+					},
+					"l2vpn-evpn": map[string]any{
+						"enable": "on",
+					},
+				},
+			},
+		},
+		"evpn": map[string]any{
+			"enable": "on",
+		},
+	}
+
+	_, err := p.client.ConfigureAndApply(ctx, []nvue.PatchOp{
+		{Path: fmt.Sprintf("/vrf/%s", vrfName), Payload: vrfConfig},
+	})
+	if err != nil {
+		return fmt.Errorf("creating VRF %s on Spectrum fabric: %w", vrfName, err)
+	}
 
 	logger.Info().
 		Str("vrf_name", vrfName).
@@ -132,32 +122,18 @@ func (p *SpectrumFabricProvider) RemoveVPCFromFabric(ctx context.Context, vpcID 
 		Str("vrf_name", vrfName).
 		Msg("removing VRF from Spectrum fabric via NVUE")
 
-	// TODO: Implement NVUE API calls when nvue-client-go is available.
-	//
-	// // 1. Create a new revision
-	// rev, err := p.client.CreateRevision(ctx)
-	// if err != nil {
-	// 	return fmt.Errorf("creating NVUE revision: %w", err)
-	// }
-	//
-	// // 2. DELETE the VRF
-	// // NVUE path: /vrf/{name}
-	// err = p.client.DeleteVRF(ctx, rev.ID, vrfName)
-	// if err != nil {
-	// 	return fmt.Errorf("deleting VRF %s: %w", vrfName, err)
-	// }
-	//
-	// // 3. Apply the revision
-	// err = p.client.ApplyRevision(ctx, rev.ID)
-	// if err != nil {
-	// 	return fmt.Errorf("applying revision %s: %w", rev.ID, err)
-	// }
-	//
-	// // 4. Wait for the apply to complete
-	// err = p.client.WaitForRevision(ctx, rev.ID, p.config.RevisionPollInterval, p.config.RevisionTimeout)
-	// if err != nil {
-	// 	return fmt.Errorf("waiting for revision %s: %w", rev.ID, err)
-	// }
+	revID, err := p.client.CreateRevisionID(ctx)
+	if err != nil {
+		return fmt.Errorf("creating NVUE revision: %w", err)
+	}
+
+	if err := p.client.DeleteVRF(ctx, vrfName, revID); err != nil {
+		return fmt.Errorf("deleting VRF %s: %w", vrfName, err)
+	}
+
+	if _, err := p.client.ApplyAndWait(ctx, revID); err != nil {
+		return fmt.Errorf("applying VRF deletion for %s: %w", vrfName, err)
+	}
 
 	logger.Info().
 		Str("vrf_name", vrfName).
@@ -168,25 +144,25 @@ func (p *SpectrumFabricProvider) RemoveVPCFromFabric(ctx context.Context, vpcID 
 
 // SyncSubnetToFabric creates VxLAN VNI and bridge VLAN configuration on
 // the Spectrum switches for the given NICo subnet. Uses the NVUE
-// revision-based workflow:
+// revision-based workflow with multiple patches in a single revision:
 //
 //  1. Create a new NVUE revision
-//  2. PATCH /nvue_v1/nve/vxlan with VNI configuration
-//  3. PATCH /nvue_v1/interface/{svi}/bridge/domain with VLAN-VNI mapping
-//  4. PATCH /nvue_v1/interface/{svi}/ip/address with gateway IP
+//  2. PATCH /nvue_v1/bridge/domain/br_default with VLAN-VNI mapping
+//  3. PATCH /nvue_v1/interface/vlan{vid} with SVI and gateway IP
+//  4. PATCH /nvue_v1/nve/vxlan with VNI flooding config
 //  5. Apply (commit) the revision
 //  6. Poll until the apply completes
 //
 // NVUE object model paths involved:
-//   - /nve/vxlan: NVE VxLAN endpoint configuration
 //   - /bridge/domain/{name}/vlan/{vid}: VLAN configuration in bridge domain
 //   - /bridge/domain/{name}/vlan/{vid}/vni: VLAN-to-VNI mapping
 //   - /interface/vlan{vid}: SVI for the VLAN (gateway interface)
 //   - /interface/vlan{vid}/ip/address: gateway IP address on the SVI
+//   - /nve/vxlan: NVE VxLAN endpoint configuration
 //
 // This operation is idempotent — if the VNI already exists, NVUE treats
 // the PATCH as a no-op.
-func (p *SpectrumFabricProvider) SyncSubnetToFabric(ctx context.Context, subnetID, vpcID, prefix, subnetName string) error {
+func (p *SpectrumFabricProvider) SyncSubnetToFabric(ctx context.Context, subnetID, vpcID, prefix, subnetName string, vlanID, vni int) error {
 	logger := log.With().Str("provider", p.Name()).Str("subnet_id", subnetID).Str("vpc_id", vpcID).Logger()
 
 	if !p.config.Features.SyncSubnet {
@@ -198,77 +174,59 @@ func (p *SpectrumFabricProvider) SyncSubnetToFabric(ctx context.Context, subnetI
 	defer p.syncMu.Unlock()
 
 	vrfName := fmt.Sprintf("nico-%s", vpcID)
+	sviName := fmt.Sprintf("vlan%d", vlanID)
 
 	logger.Info().
 		Str("prefix", prefix).
 		Str("vrf_name", vrfName).
+		Int("vlan_id", vlanID).
+		Int("vni", vni).
 		Msg("creating VxLAN VNI on Spectrum fabric via NVUE")
 
-	// TODO: Implement NVUE API calls when nvue-client-go is available.
-	//
-	// The expected NVUE revision workflow:
-	//
-	// // 1. Create a new revision
-	// rev, err := p.client.CreateRevision(ctx)
-	// if err != nil {
-	// 	return fmt.Errorf("creating NVUE revision: %w", err)
-	// }
-	//
-	// // 2. Configure VxLAN VNI
-	// // NVUE path: /nve/vxlan
-	// // A VNI ID would typically be derived from the subnet or assigned
-	// // from a pool. For now, this is a placeholder.
-	// vniConfig := map[string]interface{}{
-	// 	"enable": "on",
-	// }
-	// err = p.client.PatchNVE(ctx, rev.ID, vniConfig)
-	// if err != nil {
-	// 	return fmt.Errorf("patching NVE VxLAN config: %w", err)
-	// }
-	//
-	// // 3. Configure bridge domain VLAN-VNI mapping
-	// // NVUE path: /bridge/domain/br_default/vlan/{vid}/vni
-	// bridgeConfig := map[string]interface{}{
-	// 	"vni": map[string]interface{}{
-	// 		"flooding": map[string]interface{}{
-	// 			"enable": "on",
-	// 		},
-	// 	},
-	// }
-	// err = p.client.PatchBridgeVLAN(ctx, rev.ID, "br_default", vlanID, bridgeConfig)
-	// if err != nil {
-	// 	return fmt.Errorf("patching bridge VLAN-VNI mapping: %w", err)
-	// }
-	//
-	// // 4. Configure SVI with gateway IP
-	// // NVUE path: /interface/vlan{vid}/ip/address
-	// sviConfig := map[string]interface{}{
-	// 	"ip": map[string]interface{}{
-	// 		"address": map[string]interface{}{
-	// 			prefix: map[string]interface{}{},
-	// 		},
-	// 		"vrf": vrfName,
-	// 	},
-	// }
-	// err = p.client.PatchInterface(ctx, rev.ID, fmt.Sprintf("vlan%d", vlanID), sviConfig)
-	// if err != nil {
-	// 	return fmt.Errorf("patching SVI config: %w", err)
-	// }
-	//
-	// // 5. Apply the revision
-	// err = p.client.ApplyRevision(ctx, rev.ID)
-	// if err != nil {
-	// 	return fmt.Errorf("applying revision %s: %w", rev.ID, err)
-	// }
-	//
-	// // 6. Wait for the apply to complete
-	// err = p.client.WaitForRevision(ctx, rev.ID, p.config.RevisionPollInterval, p.config.RevisionTimeout)
-	// if err != nil {
-	// 	return fmt.Errorf("waiting for revision %s: %w", rev.ID, err)
-	// }
+	// Configure bridge domain VLAN with VNI mapping.
+	bridgeConfig := map[string]any{
+		"vlan": map[string]any{
+			fmt.Sprintf("%d", vlanID): map[string]any{
+				"vni": map[string]any{
+					fmt.Sprintf("%d", vni): map[string]any{
+						"flooding": map[string]any{
+							"enable":            "on",
+							"head-end-replication": map[string]any{},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Configure SVI with gateway IP in the tenant VRF.
+	sviConfig := map[string]any{
+		"type": "svi",
+		"ip": map[string]any{
+			"address": map[string]any{
+				prefix: map[string]any{},
+			},
+			"vrf": vrfName,
+		},
+	}
+
+	// Configure NVE VxLAN endpoint.
+	nveConfig := map[string]any{
+		"enable": "on",
+	}
+
+	_, err := p.client.ConfigureAndApply(ctx, []nvue.PatchOp{
+		{Path: "/bridge/domain/br_default", Payload: bridgeConfig},
+		{Path: fmt.Sprintf("/interface/%s", sviName), Payload: sviConfig},
+		{Path: "/nve/vxlan", Payload: nveConfig},
+	})
+	if err != nil {
+		return fmt.Errorf("creating VxLAN VNI %d for subnet %s: %w", vni, subnetID, err)
+	}
 
 	logger.Info().
 		Str("prefix", prefix).
+		Int("vni", vni).
 		Msg("VxLAN VNI created on Spectrum fabric")
 
 	return nil
@@ -280,13 +238,13 @@ func (p *SpectrumFabricProvider) SyncSubnetToFabric(ctx context.Context, subnetI
 //
 //  1. Create a new NVUE revision
 //  2. DELETE /nvue_v1/interface/vlan{vid} (remove SVI)
-//  3. DELETE /nvue_v1/bridge/domain/{name}/vlan/{vid} (remove VLAN from bridge)
+//  3. DELETE /nvue_v1/bridge/domain/br_default/vlan/{vid} (remove VLAN from bridge)
 //  4. Apply (commit) the revision
 //  5. Poll until the apply completes
 //
 // This operation is idempotent — if the VNI does not exist, NVUE treats
 // the DELETE as a no-op.
-func (p *SpectrumFabricProvider) RemoveSubnetFromFabric(ctx context.Context, subnetID, vpcID string) error {
+func (p *SpectrumFabricProvider) RemoveSubnetFromFabric(ctx context.Context, subnetID, vpcID string, vlanID int) error {
 	logger := log.With().Str("provider", p.Name()).Str("subnet_id", subnetID).Logger()
 
 	if !p.config.Features.SyncSubnet {
@@ -297,44 +255,35 @@ func (p *SpectrumFabricProvider) RemoveSubnetFromFabric(ctx context.Context, sub
 	p.syncMu.Lock()
 	defer p.syncMu.Unlock()
 
-	logger.Info().Msg("removing VxLAN VNI from Spectrum fabric via NVUE")
+	sviName := fmt.Sprintf("vlan%d", vlanID)
 
-	// TODO: Implement NVUE API calls when nvue-client-go is available.
-	//
-	// // 1. Create a new revision
-	// rev, err := p.client.CreateRevision(ctx)
-	// if err != nil {
-	// 	return fmt.Errorf("creating NVUE revision: %w", err)
-	// }
-	//
-	// // 2. Delete SVI interface
-	// // NVUE path: /interface/vlan{vid}
-	// err = p.client.DeleteInterface(ctx, rev.ID, fmt.Sprintf("vlan%d", vlanID))
-	// if err != nil {
-	// 	return fmt.Errorf("deleting SVI: %w", err)
-	// }
-	//
-	// // 3. Delete VLAN from bridge domain
-	// // NVUE path: /bridge/domain/br_default/vlan/{vid}
-	// err = p.client.DeleteBridgeVLAN(ctx, rev.ID, "br_default", vlanID)
-	// if err != nil {
-	// 	return fmt.Errorf("deleting bridge VLAN: %w", err)
-	// }
-	//
-	// // 4. Apply the revision
-	// err = p.client.ApplyRevision(ctx, rev.ID)
-	// if err != nil {
-	// 	return fmt.Errorf("applying revision %s: %w", rev.ID, err)
-	// }
-	//
-	// // 5. Wait for the apply to complete
-	// err = p.client.WaitForRevision(ctx, rev.ID, p.config.RevisionPollInterval, p.config.RevisionTimeout)
-	// if err != nil {
-	// 	return fmt.Errorf("waiting for revision %s: %w", rev.ID, err)
-	// }
+	logger.Info().
+		Int("vlan_id", vlanID).
+		Msg("removing VxLAN VNI from Spectrum fabric via NVUE")
+
+	revID, err := p.client.CreateRevisionID(ctx)
+	if err != nil {
+		return fmt.Errorf("creating NVUE revision: %w", err)
+	}
+
+	// Remove SVI interface.
+	if err := p.client.DeleteInterface(ctx, sviName, revID); err != nil {
+		return fmt.Errorf("deleting SVI %s: %w", sviName, err)
+	}
+
+	// Remove VLAN from bridge domain.
+	bridgeVLANPath := fmt.Sprintf("/bridge/domain/br_default/vlan/%d", vlanID)
+	if err := p.client.Delete(ctx, bridgeVLANPath, revID); err != nil {
+		return fmt.Errorf("deleting bridge VLAN %d: %w", vlanID, err)
+	}
+
+	if _, err := p.client.ApplyAndWait(ctx, revID); err != nil {
+		return fmt.Errorf("applying VxLAN VNI removal for subnet %s: %w", subnetID, err)
+	}
 
 	logger.Info().
 		Str("subnet_id", subnetID).
+		Int("vlan_id", vlanID).
 		Msg("VxLAN VNI removed from Spectrum fabric")
 
 	return nil

@@ -19,13 +19,13 @@ package spectrumfabric
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/rs/zerolog/log"
 
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
-	// TODO: Uncomment when nvue-client-go is available.
-	// nvue "github.com/NVIDIA/nvue-client-go"
+	"github.com/fabiendupont/nvidia-nvue-client-go/pkg/nvue"
 )
 
 // SpectrumFabricProvider manages Spectrum-X switch fabric directly via the
@@ -44,8 +44,7 @@ import (
 // This provider syncs those constructs to the physical Spectrum switches.
 type SpectrumFabricProvider struct {
 	config ProviderConfig
-	// TODO: Uncomment when nvue-client-go is available.
-	// client *nvue.Client
+	client *nvue.Client
 	syncMu sync.Mutex
 }
 
@@ -78,24 +77,23 @@ func (p *SpectrumFabricProvider) Init(ctx provider.ProviderContext) error {
 		return err
 	}
 
-	// TODO: Create the NVUE REST client when nvue-client-go is available.
-	//
-	// c, err := nvue.NewClient(nvue.Config{
-	// 	URL:           p.config.NVUEURL,
-	// 	Username:      p.config.NVUEUsername,
-	// 	Password:      p.config.NVUEPassword,
-	// 	TLSSkipVerify: p.config.TLSSkipVerify,
-	// })
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// // Verify connectivity by fetching the system version.
-	// if _, err := c.GetSystemVersion(context.Background()); err != nil {
-	// 	return fmt.Errorf("NVUE connectivity check failed: %w", err)
-	// }
-	//
-	// p.client = c
+	opts := []nvue.Option{}
+	if p.config.TLSSkipVerify {
+		opts = append(opts, nvue.WithInsecureSkipVerify())
+	}
+	if p.config.RevisionPollInterval > 0 {
+		opts = append(opts, nvue.WithPollInterval(p.config.RevisionPollInterval))
+	}
+	if p.config.RevisionTimeout > 0 {
+		opts = append(opts, nvue.WithApplyTimeout(p.config.RevisionTimeout))
+	}
+
+	p.client = nvue.NewClientFromURL(p.config.NVUEURL, p.config.NVUEUsername, p.config.NVUEPassword, opts...)
+
+	// Verify connectivity by fetching the system configuration.
+	if _, err := p.client.GetSystem(context.Background(), ""); err != nil {
+		return fmt.Errorf("NVUE connectivity check failed: %w", err)
+	}
 
 	p.registerHooks(ctx.Registry)
 

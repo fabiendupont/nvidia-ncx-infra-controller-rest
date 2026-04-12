@@ -106,25 +106,44 @@ func (p *SpectrumFabricProvider) validateSubnetConfig(ctx context.Context, paylo
 		return nil
 	}
 
-	log.Info().
+	logger := log.With().
 		Str("provider", p.Name()).
 		Str("prefix", prefix).
 		Str("vpc_id", vpcID).
-		Msg("validating subnet config against Spectrum fabric (NVUE dry-run)")
+		Logger()
 
-	// TODO: When nvue-client-go is available, create a dry-run revision:
-	//
-	// 1. Create a new NVUE revision (POST /nvue_v1/revision)
-	// 2. PATCH the VxLAN VNI config into the revision
-	// 3. Validate (but do NOT apply) the revision
-	// 4. Delete the revision to clean up
-	//
-	// If any step fails, return an error to abort subnet creation.
+	logger.Info().Msg("validating subnet config against Spectrum fabric (NVUE dry-run)")
 
-	log.Info().
-		Str("provider", p.Name()).
-		Str("prefix", prefix).
-		Msg("subnet config validated against Spectrum fabric")
+	// Create a revision and patch the proposed config to validate it,
+	// but do NOT apply. This verifies that NVUE accepts the config
+	// before NICo commits the subnet to the database.
+	revID, err := p.client.CreateRevisionID(ctx)
+	if err != nil {
+		return fmt.Errorf("NVUE dry-run: creating revision: %w", err)
+	}
+
+	vrfName := fmt.Sprintf("nico-%s", vpcID)
+	sviConfig := map[string]any{
+		"type": "svi",
+		"ip": map[string]any{
+			"address": map[string]any{
+				prefix: map[string]any{},
+			},
+			"vrf": vrfName,
+		},
+	}
+
+	// Patch a dummy SVI config into the revision to validate it.
+	if err := p.client.Patch(ctx, "/interface/validation-probe", revID, sviConfig); err != nil {
+		// Delete the revision before returning the validation error.
+		_ = p.client.Delete(ctx, fmt.Sprintf("/revision/%s", revID), "")
+		return fmt.Errorf("NVUE dry-run: subnet config rejected by Spectrum fabric: %w", err)
+	}
+
+	// Clean up the validation revision without applying it.
+	_ = p.client.Delete(ctx, fmt.Sprintf("/revision/%s", revID), "")
+
+	logger.Info().Msg("subnet config validated against Spectrum fabric")
 
 	return nil
 }
