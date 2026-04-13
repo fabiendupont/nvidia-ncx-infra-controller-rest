@@ -20,9 +20,22 @@ package fulfillment
 import (
 	"net/http"
 
+	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 	"github.com/google/uuid"
 	echo "github.com/labstack/echo/v4"
 )
+
+// withRole wraps a handler with role-based access control.
+func withRole(handler echo.HandlerFunc, roles ...string) echo.HandlerFunc {
+	mw := provider.RequireRole(roles...)
+	return mw(handler)
+}
+
+// withAuth wraps a handler with authentication check.
+func withAuth(handler echo.HandlerFunc) echo.HandlerFunc {
+	mw := provider.RequireAuth()
+	return mw(handler)
+}
 
 // RegisterRoutes registers all fulfillment-related API routes on the given group.
 func (p *FulfillmentProvider) RegisterRoutes(group *echo.Group) {
@@ -40,15 +53,17 @@ func (p *FulfillmentProvider) RegisterRoutes(group *echo.Group) {
 	}
 	serviceHandler := NewServiceHandler(p.serviceStore)
 
-	// Order endpoints
-	group.Add(http.MethodPost, prefix+"/catalog/orders", orderHandler.Create)
-	group.Add(http.MethodGet, prefix+"/catalog/orders", orderHandler.List)
-	group.Add(http.MethodGet, prefix+"/catalog/orders/:id", orderHandler.Get)
-	group.Add(http.MethodDelete, prefix+"/catalog/orders/:id", orderHandler.Cancel)
+	// Order endpoints — any authenticated org member can order and view
+	group.Add(http.MethodPost, prefix+"/catalog/orders", withAuth(orderHandler.Create))
+	group.Add(http.MethodGet, prefix+"/catalog/orders", withAuth(orderHandler.List))
+	group.Add(http.MethodGet, prefix+"/catalog/orders/:id", withAuth(orderHandler.Get))
+	group.Add(http.MethodDelete, prefix+"/catalog/orders/:id", withAuth(orderHandler.Cancel))
 
-	// Service endpoints
-	group.Add(http.MethodGet, prefix+"/services", serviceHandler.List)
-	group.Add(http.MethodGet, prefix+"/services/:id", serviceHandler.Get)
-	group.Add(http.MethodPatch, prefix+"/services/:id", serviceHandler.Update)
-	group.Add(http.MethodDelete, prefix+"/services/:id", serviceHandler.Delete)
+	// Service endpoints — read for any member, write for tenant admin+
+	group.Add(http.MethodGet, prefix+"/services", withAuth(serviceHandler.List))
+	group.Add(http.MethodGet, prefix+"/services/:id", withAuth(serviceHandler.Get))
+	group.Add(http.MethodPatch, prefix+"/services/:id", withRole(serviceHandler.Update,
+		provider.RoleProviderAdmin, provider.RoleTenantAdmin))
+	group.Add(http.MethodDelete, prefix+"/services/:id", withRole(serviceHandler.Delete,
+		provider.RoleProviderAdmin, provider.RoleTenantAdmin))
 }

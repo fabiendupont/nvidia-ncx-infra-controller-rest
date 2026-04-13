@@ -11836,8 +11836,477 @@ paths:
         Retrieve a specific Audit Log Entry by ID
 
         User must have `FORGE_PROVIDER_ADMIN` or `FORGE_TENANT_ADMIN` authorization role
+
+  # --- Catalog Blueprint endpoints ---
+  '/v2/org/{org}/carbide/catalog/blueprints':
+    parameters:
+      - $ref: '#/components/parameters/orgParam'
+    get:
+      summary: List blueprints
+      tags: [Catalog]
+      operationId: list-blueprints
+      description: List all active blueprints visible to the caller. Supports pagination and tenant filtering.
+      parameters:
+        - name: tenant_id
+          in: query
+          schema: { type: string }
+          description: Filter by tenant ID (returns public + tenant-owned)
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlueprintListResponse'
+    post:
+      summary: Create blueprint
+      tags: [Catalog]
+      operationId: create-blueprint
+      description: Create a new blueprint. Requires BLUEPRINT_AUTHOR, FORGE_TENANT_ADMIN, or FORGE_PROVIDER_ADMIN role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBlueprintRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blueprint'
+        '400':
+          description: Validation error
+        '403':
+          description: Forbidden
+
+  '/v2/org/{org}/carbide/catalog/blueprints/{id}':
+    parameters:
+      - $ref: '#/components/parameters/orgParam'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Get blueprint
+      tags: [Catalog]
+      operationId: get-blueprint
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blueprint'
+        '404':
+          description: Not found
+    patch:
+      summary: Update blueprint
+      tags: [Catalog]
+      operationId: update-blueprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBlueprintRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blueprint'
+        '403':
+          description: Forbidden
+    delete:
+      summary: Delete blueprint
+      tags: [Catalog]
+      operationId: delete-blueprint
+      description: Soft-delete a blueprint. Requires FORGE_PROVIDER_ADMIN role.
+      responses:
+        '204':
+          description: No content
+        '403':
+          description: Forbidden
+
+  '/v2/org/{org}/carbide/catalog/blueprints/{id}/resolved':
+    parameters:
+      - $ref: '#/components/parameters/orgParam'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Get resolved blueprint
+      tags: [Catalog]
+      operationId: get-resolved-blueprint
+      description: Returns the effective blueprint after variant resolution. Locked parameters are excluded.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blueprint'
+
+  '/v2/org/{org}/carbide/catalog/blueprints/{id}/estimate':
+    parameters:
+      - $ref: '#/components/parameters/orgParam'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Estimate blueprint cost
+      tags: [Catalog]
+      operationId: estimate-blueprint-cost
+      description: Returns the estimated cost for a blueprint by summing constituent blueprint pricing.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostEstimate'
+
+  '/v2/org/{org}/carbide/catalog/blueprints/{id}/validate':
+    parameters:
+      - $ref: '#/components/parameters/orgParam'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Validate blueprint DAG
+      tags: [Catalog]
+      operationId: validate-blueprint
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid: { type: boolean }
+                  errors: { type: array, items: { type: string } }
+
+  '/v2/org/{org}/carbide/catalog/resource-types':
+    parameters:
+      - $ref: '#/components/parameters/orgParam'
+    get:
+      summary: List resource types
+      tags: [Catalog]
+      operationId: list-resource-types
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resource_types:
+                    type: array
+                    items: { type: string }
+
+  # --- Order endpoints ---
+  '/v2/org/{org}/carbide/catalog/orders':
+    parameters:
+      - $ref: '#/components/parameters/orgParam'
+    get:
+      summary: List orders
+      tags: [Fulfillment]
+      operationId: list-orders
+      parameters:
+        - name: tenant_id
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [Pending, Provisioning, Ready, Failed, Cancelled] }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+    post:
+      summary: Create order
+      tags: [Fulfillment]
+      operationId: create-order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  '/v2/org/{org}/carbide/catalog/orders/{id}':
+    parameters:
+      - $ref: '#/components/parameters/orgParam'
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Get order
+      tags: [Fulfillment]
+      operationId: get-order
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+    delete:
+      summary: Cancel order
+      tags: [Fulfillment]
+      operationId: cancel-order
+      responses:
+        '204':
+          description: No content
+
+  # --- Usage / Showback endpoints ---
+  '/v2/org/{org}/carbide/self/usage/costs':
+    parameters:
+      - $ref: '#/components/parameters/orgParam'
+    get:
+      summary: Get usage with cost breakdown
+      tags: [Showback]
+      operationId: get-usage-costs
+      description: Returns usage metrics with per-metric cost breakdown for the authenticated tenant.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageCostSummary'
+
 components:
+  parameters:
+    orgParam:
+      name: org
+      in: path
+      required: true
+      schema: { type: string }
+      description: Name of the Org
   schemas:
+    # --- Catalog schemas ---
+    Blueprint:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        version: { type: string }
+        description: { type: string }
+        parameters:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BlueprintParameter'
+        resources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BlueprintResource'
+        labels:
+          type: object
+          additionalProperties: { type: string }
+        pricing:
+          $ref: '#/components/schemas/PricingSpec'
+        tenant_id: { type: string, format: uuid }
+        visibility: { type: string, enum: [public, organization, private] }
+        based_on: { type: string }
+        is_active: { type: boolean }
+        created: { type: string, format: date-time }
+        updated: { type: string, format: date-time }
+      required: [id, name, version, visibility, is_active]
+
+    BlueprintParameter:
+      type: object
+      properties:
+        name: { type: string }
+        type: { type: string, enum: [string, integer, boolean] }
+        description: { type: string }
+        required: { type: boolean }
+        default: {}
+        enum: { type: array, items: { type: string } }
+        min: { type: integer }
+        max: { type: integer }
+        locked: { type: boolean }
+
+    BlueprintResource:
+      type: object
+      properties:
+        type: { type: string }
+        depends_on: { type: array, items: { type: string } }
+        condition: { type: string }
+        count: { type: string }
+        properties:
+          type: object
+          additionalProperties: {}
+
+    PricingSpec:
+      type: object
+      properties:
+        rate: { type: number }
+        unit: { type: string, enum: [hour, month, one-time] }
+        currency: { type: string }
+        billing_interval: { type: integer }
+      required: [rate, unit, currency]
+
+    CostEstimate:
+      type: object
+      properties:
+        estimated_rate: { type: number }
+        unit: { type: string }
+        currency: { type: string }
+        breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              blueprint: { type: string }
+              rate: { type: number }
+
+    BlueprintListResponse:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Blueprint' } }
+        total: { type: integer }
+        offset: { type: integer }
+        limit: { type: integer }
+
+    CreateBlueprintRequest:
+      type: object
+      properties:
+        name: { type: string }
+        version: { type: string }
+        description: { type: string }
+        parameters:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BlueprintParameter'
+        resources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BlueprintResource'
+        labels:
+          type: object
+          additionalProperties: { type: string }
+        pricing:
+          $ref: '#/components/schemas/PricingSpec'
+        tenant_id: { type: string, format: uuid }
+        visibility: { type: string, enum: [public, organization, private] }
+        based_on: { type: string }
+      required: [name, version]
+
+    UpdateBlueprintRequest:
+      type: object
+      properties:
+        name: { type: string }
+        version: { type: string }
+        description: { type: string }
+        parameters:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BlueprintParameter'
+        resources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BlueprintResource'
+        labels:
+          type: object
+          additionalProperties: { type: string }
+        pricing:
+          $ref: '#/components/schemas/PricingSpec'
+        visibility: { type: string }
+
+    # --- Fulfillment schemas ---
+    Order:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        blueprint_id: { type: string, format: uuid }
+        blueprint_name: { type: string }
+        tenant_id: { type: string, format: uuid }
+        parameters:
+          type: object
+          additionalProperties: {}
+        status: { type: string, enum: [Pending, Provisioning, Ready, Failed, Cancelled] }
+        status_message: { type: string }
+        workflow_id: { type: string }
+        service_id: { type: string, format: uuid }
+        created: { type: string, format: date-time }
+        updated: { type: string, format: date-time }
+
+    OrderListResponse:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Order' } }
+        total: { type: integer }
+        offset: { type: integer }
+        limit: { type: integer }
+
+    CreateOrderRequest:
+      type: object
+      properties:
+        blueprint_id: { type: string, format: uuid }
+        blueprint_name: { type: string }
+        tenant_id: { type: string, format: uuid }
+        parameters:
+          type: object
+          additionalProperties: {}
+      required: [blueprint_id, tenant_id]
+
+    # --- Showback schemas ---
+    UsageCostSummary:
+      type: object
+      properties:
+        tenant_id: { type: string, format: uuid }
+        period: { type: string }
+        metrics:
+          type: object
+          additionalProperties: { type: number }
+        costs:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/CostDetail'
+        total_cost: { type: number }
+        currency: { type: string }
+
+    CostDetail:
+      type: object
+      properties:
+        quantity: { type: number }
+        rate: { type: number }
+        unit: { type: string }
+        cost: { type: number }
+
+    # --- Existing schemas ---
     InfrastructureProvider:
       description: Infrastructure providers own and manage datacenters
       type: object

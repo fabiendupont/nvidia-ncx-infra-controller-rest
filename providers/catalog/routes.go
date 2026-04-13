@@ -20,20 +20,41 @@ package catalog
 import (
 	"net/http"
 
+	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 	echo "github.com/labstack/echo/v4"
 )
+
+// withRole wraps a handler with role-based access control.
+func withRole(handler echo.HandlerFunc, roles ...string) echo.HandlerFunc {
+	mw := provider.RequireRole(roles...)
+	return mw(handler)
+}
+
+// withAuth wraps a handler with authentication check.
+func withAuth(handler echo.HandlerFunc) echo.HandlerFunc {
+	mw := provider.RequireAuth()
+	return mw(handler)
+}
 
 // RegisterRoutes registers all catalog blueprint endpoints on the given Echo group.
 func (p *CatalogProvider) RegisterRoutes(group *echo.Group) {
 	bp := p.apiPathPrefix + "/catalog/blueprints"
 
-	group.Add(http.MethodPost, bp, p.blueprintHandler.handleCreateBlueprint)
-	group.Add(http.MethodGet, bp, p.blueprintHandler.handleListBlueprints)
-	group.Add(http.MethodGet, bp+"/:id", p.blueprintHandler.handleGetBlueprint)
-	group.Add(http.MethodPatch, bp+"/:id", p.blueprintHandler.handleUpdateBlueprint)
-	group.Add(http.MethodDelete, bp+"/:id", p.blueprintHandler.handleDeleteBlueprint)
-	group.Add(http.MethodPost, bp+"/:id/validate", p.blueprintHandler.handleValidateBlueprint)
-	group.Add(http.MethodPost, bp+"/:id/estimate", p.blueprintHandler.handleEstimateCost)
-	group.Add(http.MethodGet, bp+"/:id/resolved", p.blueprintHandler.handleResolvedBlueprint)
-	group.Add(http.MethodGet, p.apiPathPrefix+"/catalog/resource-types", p.blueprintHandler.handleListResourceTypes)
+	// Read endpoints — any authenticated org member
+	group.Add(http.MethodGet, bp, withAuth(p.blueprintHandler.handleListBlueprints))
+	group.Add(http.MethodGet, bp+"/:id", withAuth(p.blueprintHandler.handleGetBlueprint))
+	group.Add(http.MethodGet, bp+"/:id/resolved", withAuth(p.blueprintHandler.handleResolvedBlueprint))
+	group.Add(http.MethodPost, bp+"/:id/estimate", withAuth(p.blueprintHandler.handleEstimateCost))
+	group.Add(http.MethodPost, bp+"/:id/validate", withAuth(p.blueprintHandler.handleValidateBlueprint))
+	group.Add(http.MethodGet, p.apiPathPrefix+"/catalog/resource-types", withAuth(p.blueprintHandler.handleListResourceTypes))
+
+	// Write endpoints — require blueprint author or provider admin
+	group.Add(http.MethodPost, bp, withRole(p.blueprintHandler.handleCreateBlueprint,
+		provider.RoleProviderAdmin, provider.RoleTenantAdmin, provider.RoleBlueprintAuthor))
+	group.Add(http.MethodPatch, bp+"/:id", withRole(p.blueprintHandler.handleUpdateBlueprint,
+		provider.RoleProviderAdmin, provider.RoleTenantAdmin, provider.RoleBlueprintAuthor))
+
+	// Delete — provider admin only
+	group.Add(http.MethodDelete, bp+"/:id", withRole(p.blueprintHandler.handleDeleteBlueprint,
+		provider.RoleProviderAdmin))
 }
