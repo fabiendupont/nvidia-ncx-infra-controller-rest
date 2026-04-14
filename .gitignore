@@ -26,3 +26,6 @@ db/cmd/migrations/migrations
 # SDK submodule (tracked in feat/sdk-submodule branch, not here)
 sdk/standard/go.mod
 sdk/standard/go.sum
+
+# OpenAPI Generator CLI config (auto-created by npx)
+openapitools.json

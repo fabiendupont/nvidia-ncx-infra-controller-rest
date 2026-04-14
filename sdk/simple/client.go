@@ -92,6 +92,56 @@ type ClientInterface interface {
 	GetVpc(ctx context.Context, id string) (*Vpc, *ApiError)
 	UpdateVpc(ctx context.Context, id string, request VpcUpdateRequest) (*Vpc, *ApiError)
 	DeleteVpc(ctx context.Context, id string) *ApiError
+
+	// Blueprint management interfaces (catalog)
+	CreateBlueprint(ctx context.Context, request BlueprintCreateRequest) (*Blueprint, *ApiError)
+	GetBlueprints(ctx context.Context, blueprintFilter *BlueprintFilter, paginationFilter *OffsetPaginationFilter) ([]Blueprint, *OffsetPaginationResponse, *ApiError)
+	GetBlueprint(ctx context.Context, id string) (*Blueprint, *ApiError)
+	UpdateBlueprint(ctx context.Context, id string, request BlueprintUpdateRequest) (*Blueprint, *ApiError)
+	DeleteBlueprint(ctx context.Context, id string) *ApiError
+	ValidateBlueprint(ctx context.Context, id string) (*BlueprintValidationResult, *ApiError)
+	GetResolvedBlueprint(ctx context.Context, id string) (*Blueprint, *ApiError)
+	EstimateBlueprintCost(ctx context.Context, id string) (*CostEstimate, *ApiError)
+	GetResourceTypes(ctx context.Context) ([]string, *ApiError)
+
+	// Order management interfaces (fulfillment)
+	CreateOrder(ctx context.Context, request OrderCreateRequest) (*Order, *ApiError)
+	GetOrders(ctx context.Context, orderFilter *OrderFilter, paginationFilter *OffsetPaginationFilter) ([]Order, *OffsetPaginationResponse, *ApiError)
+	GetOrder(ctx context.Context, id string) (*Order, *ApiError)
+	CancelOrder(ctx context.Context, id string) *ApiError
+
+	// Fulfillment service management interfaces
+	GetFulfillmentServices(ctx context.Context, serviceFilter *FulfillmentServiceFilter, paginationFilter *OffsetPaginationFilter) ([]FulfillmentService, *OffsetPaginationResponse, *ApiError)
+	GetFulfillmentService(ctx context.Context, id string) (*FulfillmentService, *ApiError)
+	UpdateFulfillmentService(ctx context.Context, id string, request FulfillmentServiceUpdateRequest) (*FulfillmentService, *ApiError)
+	DeleteFulfillmentService(ctx context.Context, id string) *ApiError
+
+	// Showback management interfaces
+	GetServiceUsage(ctx context.Context, serviceID string) (*UsageSummary, *ApiError)
+	GetSelfUsage(ctx context.Context) (*UsageSummary, *ApiError)
+	GetSelfUsageCosts(ctx context.Context) (*UsageCostSummary, *ApiError)
+	GetSelfQuotas(ctx context.Context) (*QuotaInfo, *ApiError)
+
+	// Capabilities
+	GetCapabilities(ctx context.Context) (map[string]FeatureStatus, *ApiError)
+
+	// Fault event management interfaces (health)
+	IngestFaultEvent(ctx context.Context, request FaultIngestionRequest) (*FaultEvent, *ApiError)
+	GetFaultEvents(ctx context.Context, filter *FaultEventFilter, paginationFilter *OffsetPaginationFilter) ([]FaultEvent, *ApiError)
+	GetFaultEvent(ctx context.Context, id string) (*FaultEvent, *ApiError)
+	UpdateFaultEvent(ctx context.Context, id string, request FaultEventUpdateRequest) (*FaultEvent, *ApiError)
+	GetFaultSummary(ctx context.Context) (*FaultSummary, *ApiError)
+	TriggerFaultRemediation(ctx context.Context, id string) (*FaultEvent, *ApiError)
+
+	// Service event management interfaces (health)
+	GetServiceEvents(ctx context.Context, tenantID string) ([]ServiceEventResponse, *ApiError)
+	GetActiveServiceEvents(ctx context.Context, tenantID string) ([]ServiceEventResponse, *ApiError)
+	GetServiceEvent(ctx context.Context, tenantID string, id string) (*ServiceEventResponse, *ApiError)
+
+	// DPF HCP management interfaces
+	ProvisionDPFHCP(ctx context.Context, siteID string, request DPFHCPProvisionRequest) (*DPFHCPProvisioningRecord, *ApiError)
+	GetDPFHCPStatus(ctx context.Context, siteID string) (*DPFHCPProvisioningRecord, *ApiError)
+	DeleteDPFHCP(ctx context.Context, siteID string) *ApiError
 }
 
 // Ensure *Client implements ClientInterface at compile time
@@ -649,6 +699,317 @@ func (c *Client) DeleteVpc(ctx context.Context, id string) *ApiError {
 	logger.Info().Msgf("Deleting VPC for org: %s", c.Config.Org)
 
 	return NewVpcManager(c).DeleteVpc(ctx, id)
+}
+
+// Blueprint
+func (c *Client) CreateBlueprint(ctx context.Context, request BlueprintCreateRequest) (*Blueprint, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Creating Blueprint for org: %s", c.Config.Org)
+
+	return NewBlueprintManager(c).Create(ctx, request)
+}
+func (c *Client) GetBlueprints(ctx context.Context, blueprintFilter *BlueprintFilter, paginationFilter *OffsetPaginationFilter) ([]Blueprint, *OffsetPaginationResponse, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting all Blueprints for org: %s", c.Config.Org)
+
+	return NewBlueprintManager(c).GetBlueprints(ctx, blueprintFilter, paginationFilter)
+}
+func (c *Client) GetBlueprint(ctx context.Context, id string) (*Blueprint, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Blueprint for org: %s", c.Config.Org)
+
+	return NewBlueprintManager(c).GetBlueprint(ctx, id)
+}
+func (c *Client) UpdateBlueprint(ctx context.Context, id string, request BlueprintUpdateRequest) (*Blueprint, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Updating Blueprint for org: %s", c.Config.Org)
+
+	return NewBlueprintManager(c).UpdateBlueprint(ctx, id, request)
+}
+func (c *Client) DeleteBlueprint(ctx context.Context, id string) *ApiError {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Deleting Blueprint for org: %s", c.Config.Org)
+
+	return NewBlueprintManager(c).DeleteBlueprint(ctx, id)
+}
+func (c *Client) ValidateBlueprint(ctx context.Context, id string) (*BlueprintValidationResult, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Validating Blueprint for org: %s", c.Config.Org)
+
+	return NewBlueprintManager(c).ValidateBlueprint(ctx, id)
+}
+func (c *Client) GetResolvedBlueprint(ctx context.Context, id string) (*Blueprint, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Resolved Blueprint for org: %s", c.Config.Org)
+
+	return NewBlueprintManager(c).GetResolvedBlueprint(ctx, id)
+}
+func (c *Client) EstimateBlueprintCost(ctx context.Context, id string) (*CostEstimate, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Estimating Blueprint cost for org: %s", c.Config.Org)
+
+	return NewBlueprintManager(c).EstimateBlueprintCost(ctx, id)
+}
+func (c *Client) GetResourceTypes(ctx context.Context) ([]string, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Resource Types for org: %s", c.Config.Org)
+
+	return NewBlueprintManager(c).GetResourceTypes(ctx)
+}
+
+// Order
+func (c *Client) CreateOrder(ctx context.Context, request OrderCreateRequest) (*Order, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Creating Order for org: %s", c.Config.Org)
+
+	return NewOrderManager(c).Create(ctx, request)
+}
+func (c *Client) GetOrders(ctx context.Context, orderFilter *OrderFilter, paginationFilter *OffsetPaginationFilter) ([]Order, *OffsetPaginationResponse, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting all Orders for org: %s", c.Config.Org)
+
+	return NewOrderManager(c).GetOrders(ctx, orderFilter, paginationFilter)
+}
+func (c *Client) GetOrder(ctx context.Context, id string) (*Order, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Order for org: %s", c.Config.Org)
+
+	return NewOrderManager(c).GetOrder(ctx, id)
+}
+func (c *Client) CancelOrder(ctx context.Context, id string) *ApiError {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Cancelling Order for org: %s", c.Config.Org)
+
+	return NewOrderManager(c).CancelOrder(ctx, id)
+}
+
+// FulfillmentService
+func (c *Client) GetFulfillmentServices(ctx context.Context, serviceFilter *FulfillmentServiceFilter, paginationFilter *OffsetPaginationFilter) ([]FulfillmentService, *OffsetPaginationResponse, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting all Fulfillment Services for org: %s", c.Config.Org)
+
+	return NewFulfillmentServiceManager(c).GetServices(ctx, serviceFilter, paginationFilter)
+}
+func (c *Client) GetFulfillmentService(ctx context.Context, id string) (*FulfillmentService, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Fulfillment Service for org: %s", c.Config.Org)
+
+	return NewFulfillmentServiceManager(c).GetService(ctx, id)
+}
+func (c *Client) UpdateFulfillmentService(ctx context.Context, id string, request FulfillmentServiceUpdateRequest) (*FulfillmentService, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Updating Fulfillment Service for org: %s", c.Config.Org)
+
+	return NewFulfillmentServiceManager(c).UpdateService(ctx, id, request)
+}
+func (c *Client) DeleteFulfillmentService(ctx context.Context, id string) *ApiError {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Deleting Fulfillment Service for org: %s", c.Config.Org)
+
+	return NewFulfillmentServiceManager(c).DeleteService(ctx, id)
+}
+
+// Showback
+func (c *Client) GetServiceUsage(ctx context.Context, serviceID string) (*UsageSummary, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Service Usage for org: %s", c.Config.Org)
+
+	return NewShowbackManager(c).GetServiceUsage(ctx, serviceID)
+}
+func (c *Client) GetSelfUsage(ctx context.Context) (*UsageSummary, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Self Usage for org: %s", c.Config.Org)
+
+	return NewShowbackManager(c).GetSelfUsage(ctx)
+}
+func (c *Client) GetSelfUsageCosts(ctx context.Context) (*UsageCostSummary, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Self Usage Costs for org: %s", c.Config.Org)
+
+	return NewShowbackManager(c).GetSelfUsageCosts(ctx)
+}
+func (c *Client) GetSelfQuotas(ctx context.Context) (*QuotaInfo, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Self Quotas for org: %s", c.Config.Org)
+
+	return NewShowbackManager(c).GetSelfQuotas(ctx)
+}
+
+// FaultEvent
+func (c *Client) IngestFaultEvent(ctx context.Context, request FaultIngestionRequest) (*FaultEvent, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Ingesting Fault Event for org: %s", c.Config.Org)
+
+	return NewFaultEventManager(c).IngestFaultEvent(ctx, request)
+}
+func (c *Client) GetFaultEvents(ctx context.Context, filter *FaultEventFilter, paginationFilter *OffsetPaginationFilter) ([]FaultEvent, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting all Fault Events for org: %s", c.Config.Org)
+
+	return NewFaultEventManager(c).GetFaultEvents(ctx, filter, paginationFilter)
+}
+func (c *Client) GetFaultEvent(ctx context.Context, id string) (*FaultEvent, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Fault Event for org: %s", c.Config.Org)
+
+	return NewFaultEventManager(c).GetFaultEvent(ctx, id)
+}
+func (c *Client) UpdateFaultEvent(ctx context.Context, id string, request FaultEventUpdateRequest) (*FaultEvent, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Updating Fault Event for org: %s", c.Config.Org)
+
+	return NewFaultEventManager(c).UpdateFaultEvent(ctx, id, request)
+}
+func (c *Client) GetFaultSummary(ctx context.Context) (*FaultSummary, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Fault Summary for org: %s", c.Config.Org)
+
+	return NewFaultEventManager(c).GetFaultSummary(ctx)
+}
+func (c *Client) TriggerFaultRemediation(ctx context.Context, id string) (*FaultEvent, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Triggering Fault Remediation for org: %s", c.Config.Org)
+
+	return NewFaultEventManager(c).TriggerFaultRemediation(ctx, id)
+}
+
+// ServiceEvent
+func (c *Client) GetServiceEvents(ctx context.Context, tenantID string) ([]ServiceEventResponse, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Service Events for org: %s", c.Config.Org)
+
+	return NewFaultEventManager(c).GetServiceEvents(ctx, tenantID)
+}
+func (c *Client) GetActiveServiceEvents(ctx context.Context, tenantID string) ([]ServiceEventResponse, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Active Service Events for org: %s", c.Config.Org)
+
+	return NewFaultEventManager(c).GetActiveServiceEvents(ctx, tenantID)
+}
+func (c *Client) GetServiceEvent(ctx context.Context, tenantID string, id string) (*ServiceEventResponse, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting Service Event for org: %s", c.Config.Org)
+
+	return NewFaultEventManager(c).GetServiceEvent(ctx, tenantID, id)
+}
+
+// DPFHCP
+func (c *Client) ProvisionDPFHCP(ctx context.Context, siteID string, request DPFHCPProvisionRequest) (*DPFHCPProvisioningRecord, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Provisioning DPF HCP for org: %s", c.Config.Org)
+
+	return NewDPFHCPManager(c).ProvisionDPFHCP(ctx, siteID, request)
+}
+func (c *Client) GetDPFHCPStatus(ctx context.Context, siteID string) (*DPFHCPProvisioningRecord, *ApiError) {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Getting DPF HCP Status for org: %s", c.Config.Org)
+
+	return NewDPFHCPManager(c).GetDPFHCPStatus(ctx, siteID)
+}
+func (c *Client) DeleteDPFHCP(ctx context.Context, siteID string) *ApiError {
+	ctx = WithLogger(ctx, c.Logger)
+	ctx = context.WithValue(ctx, standard.ContextAccessToken, c.Config.Token)
+
+	logger := LoggerFromContext(ctx)
+	logger.Info().Msgf("Deleting DPF HCP for org: %s", c.Config.Org)
+
+	return NewDPFHCPManager(c).DeleteDPFHCP(ctx, siteID)
 }
 
 // NewClient creates a new simple SDK client

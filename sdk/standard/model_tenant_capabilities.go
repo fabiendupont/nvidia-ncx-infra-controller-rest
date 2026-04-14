@@ -21,6 +21,8 @@ var _ MappedNullable = &TenantCapabilities{}
 type TenantCapabilities struct {
 	// Indicates whether Tenant can create Instances by specifying Machine ID
 	TargetedInstanceCreation *bool `json:"targetedInstanceCreation,omitempty"`
+	// Indicates whether tenant-facing service events are available for this tenant
+	FaultManagement *bool `json:"faultManagement,omitempty"`
 }
 
 // NewTenantCapabilities instantiates a new TenantCapabilities object
@@ -72,6 +74,38 @@ func (o *TenantCapabilities) SetTargetedInstanceCreation(v bool) {
 	o.TargetedInstanceCreation = &v
 }
 
+// GetFaultManagement returns the FaultManagement field value if set, zero value otherwise.
+func (o *TenantCapabilities) GetFaultManagement() bool {
+	if o == nil || IsNil(o.FaultManagement) {
+		var ret bool
+		return ret
+	}
+	return *o.FaultManagement
+}
+
+// GetFaultManagementOk returns a tuple with the FaultManagement field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *TenantCapabilities) GetFaultManagementOk() (*bool, bool) {
+	if o == nil || IsNil(o.FaultManagement) {
+		return nil, false
+	}
+	return o.FaultManagement, true
+}
+
+// HasFaultManagement returns a boolean if a field has been set.
+func (o *TenantCapabilities) HasFaultManagement() bool {
+	if o != nil && !IsNil(o.FaultManagement) {
+		return true
+	}
+
+	return false
+}
+
+// SetFaultManagement gets a reference to the given bool and assigns it to the FaultManagement field.
+func (o *TenantCapabilities) SetFaultManagement(v bool) {
+	o.FaultManagement = &v
+}
+
 func (o TenantCapabilities) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -84,6 +118,9 @@ func (o TenantCapabilities) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	if !IsNil(o.TargetedInstanceCreation) {
 		toSerialize["targetedInstanceCreation"] = o.TargetedInstanceCreation
+	}
+	if !IsNil(o.FaultManagement) {
+		toSerialize["faultManagement"] = o.FaultManagement
 	}
 	return toSerialize, nil
 }

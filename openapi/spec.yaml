@@ -149,6 +149,28 @@ tags:
     description: Audit operations
   - name: Metadata
     description: Metadata describes various system level attributes of the API server
+  - name: Health
+    description: |-
+      Health operations manage fault events (operator-facing) and service events (tenant-facing).
+      Fault events track infrastructure faults through their full lifecycle: detection, classification,
+      remediation, and resolution. Service events are tenant-safe summaries of disruptions derived
+      from fault events.
+  - name: DPF HCP
+    description: |-
+      DPF HCP (Data Processing Function Hosted Control Plane) operations manage the provisioning
+      and lifecycle of hosted control planes for DPU-accelerated infrastructure at a site.
+  - name: Catalog
+    description: |-
+      Catalog operations manage blueprints — composable, DAG-based service definitions.
+      Blueprints can be atomic or composed from other blueprints, with parameters, pricing, and visibility controls.
+  - name: Fulfillment
+    description: |-
+      Fulfillment operations manage orders and provisioned services.
+      Orders are placed against catalog blueprints and result in provisioned services with tracked resources.
+  - name: Showback
+    description: |-
+      Showback operations provide usage metrics, cost breakdown, and quota information for tenants.
+      These endpoints help tenants understand their resource consumption and associated costs.
   - name: Deprecations
     description: |-
       Endpoints that have deprecations will be grouped here. Following deprecations are in effect or slated to be effective in future:
@@ -11757,7 +11779,12 @@ paths:
   # --- Catalog Blueprint endpoints ---
   '/v2/org/{org}/carbide/catalog/blueprints':
     parameters:
-      - $ref: '#/components/parameters/orgParam'
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
     get:
       summary: List blueprints
       tags: [Catalog]
@@ -11806,7 +11833,12 @@ paths:
 
   '/v2/org/{org}/carbide/catalog/blueprints/{id}':
     parameters:
-      - $ref: '#/components/parameters/orgParam'
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
       - name: id
         in: path
         required: true
@@ -11856,7 +11888,12 @@ paths:
 
   '/v2/org/{org}/carbide/catalog/blueprints/{id}/resolved':
     parameters:
-      - $ref: '#/components/parameters/orgParam'
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
       - name: id
         in: path
         required: true
@@ -11876,7 +11913,12 @@ paths:
 
   '/v2/org/{org}/carbide/catalog/blueprints/{id}/estimate':
     parameters:
-      - $ref: '#/components/parameters/orgParam'
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
       - name: id
         in: path
         required: true
@@ -11896,7 +11938,12 @@ paths:
 
   '/v2/org/{org}/carbide/catalog/blueprints/{id}/validate':
     parameters:
-      - $ref: '#/components/parameters/orgParam'
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
       - name: id
         in: path
         required: true
@@ -11918,7 +11965,12 @@ paths:
 
   '/v2/org/{org}/carbide/catalog/resource-types':
     parameters:
-      - $ref: '#/components/parameters/orgParam'
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
     get:
       summary: List resource types
       tags: [Catalog]
@@ -11938,7 +11990,12 @@ paths:
   # --- Order endpoints ---
   '/v2/org/{org}/carbide/catalog/orders':
     parameters:
-      - $ref: '#/components/parameters/orgParam'
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
     get:
       summary: List orders
       tags: [Fulfillment]
@@ -11983,7 +12040,12 @@ paths:
 
   '/v2/org/{org}/carbide/catalog/orders/{id}':
     parameters:
-      - $ref: '#/components/parameters/orgParam'
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
       - name: id
         in: path
         required: true
@@ -12007,10 +12069,518 @@ paths:
         '204':
           description: No content
 
+  # --- Fulfillment service endpoints ---
+  '/v2/org/{org}/carbide/services':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+    get:
+      summary: List services
+      tags: [Fulfillment]
+      operationId: list-services
+      description: List provisioned services with optional tenant filtering.
+      parameters:
+        - name: tenant_id
+          in: query
+          schema: { type: string }
+          description: Filter by tenant ID
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentServiceListResponse'
+
+  '/v2/org/{org}/carbide/services/{id}':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Get service
+      tags: [Fulfillment]
+      operationId: get-service
+      description: Retrieve a provisioned service by ID.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentService'
+        '404':
+          description: Not found
+    patch:
+      summary: Update service
+      tags: [Fulfillment]
+      operationId: update-service
+      description: Update a provisioned service. Requires FORGE_TENANT_ADMIN or FORGE_PROVIDER_ADMIN role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentService'
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+    delete:
+      summary: Delete service
+      tags: [Fulfillment]
+      operationId: delete-service
+      description: Initiate teardown of a provisioned service. Requires FORGE_TENANT_ADMIN or FORGE_PROVIDER_ADMIN role.
+      responses:
+        '204':
+          description: No content
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+
+  # --- Capabilities endpoint ---
+  '/v2/org/{org}/carbide/capabilities':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+    get:
+      summary: List feature capabilities
+      tags: [Metadata]
+      operationId: get-capabilities
+      description: |-
+        Returns the status of all known features. Each feature reports whether it is
+        available, which provider implements it, and the provider version.
+        Feature names include: compute, networking, health, fault-management, catalog,
+        fulfillment, showback, dpf-hcp, firmware, nvswitch, site, fabric, and others.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapabilitiesResponse'
+
+  # --- Health / Fault event endpoints ---
+  '/v2/org/{org}/carbide/health/events/ingest':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+    post:
+      summary: Ingest fault event
+      tags: [Health]
+      operationId: ingest-fault-event
+      description: |-
+        Webhook endpoint for external monitoring systems to report infrastructure faults.
+        Creates a new fault event with state=open.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FaultIngestionRequest'
+      responses:
+        '201':
+          description: Fault event created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEvent'
+        '400':
+          description: Validation error
+
+  '/v2/org/{org}/carbide/health/events/summary':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+    get:
+      summary: Get fault summary
+      tags: [Health]
+      operationId: get-fault-summary
+      description: Returns aggregated fault counts by severity, component, state, and site.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultSummary'
+
+  '/v2/org/{org}/carbide/health/events':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+    get:
+      summary: List fault events
+      tags: [Health]
+      operationId: list-fault-events
+      description: List fault events with optional filtering, sorting, and pagination.
+      parameters:
+        - name: severity
+          in: query
+          schema: { type: string, enum: [critical, warning, info] }
+        - name: component
+          in: query
+          schema: { type: string, enum: [gpu, nvswitch, network, storage, power, cooling, memory, cpu, bmc] }
+        - name: state
+          in: query
+          schema: { type: string, enum: [open, acknowledged, remediating, resolved, escalated, suppressed] }
+        - name: site_id
+          in: query
+          schema: { type: string }
+        - name: machine_id
+          in: query
+          schema: { type: string }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [detected_at, created_at, updated_at, severity, component, state] }
+        - name: order
+          in: query
+          schema: { type: string, enum: [asc, desc], default: asc }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100, maximum: 1000 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FaultEvent'
+
+  '/v2/org/{org}/carbide/health/events/{id}':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Get fault event
+      tags: [Health]
+      operationId: get-fault-event
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEvent'
+        '404':
+          description: Not found
+    patch:
+      summary: Update fault event
+      tags: [Health]
+      operationId: update-fault-event
+      description: Update fault event state (acknowledge, suppress, resolve) and metadata.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFaultEventRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEvent'
+        '404':
+          description: Not found
+
+  '/v2/org/{org}/carbide/health/events/{id}/remediate':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Trigger fault remediation
+      tags: [Health]
+      operationId: trigger-fault-remediation
+      description: Sets the fault event state to remediating and increments the remediation attempt counter.
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultEvent'
+        '404':
+          description: Not found
+
+  # --- Service event endpoints ---
+  '/v2/org/{org}/carbide/tenant/{tenantId}/service-events':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+      - name: tenantId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+        description: Tenant ID
+    get:
+      summary: List service events
+      tags: [Health]
+      operationId: list-service-events
+      description: List tenant-facing service events. Optionally filter by state. No infrastructure details are exposed.
+      parameters:
+        - name: state
+          in: query
+          schema: { type: string }
+          description: Filter by event state (e.g., active, resolved)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceEventResponse'
+
+  '/v2/org/{org}/carbide/tenant/{tenantId}/service-events/active':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+      - name: tenantId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Get active service events
+      tags: [Health]
+      operationId: get-active-service-events
+      description: Returns only active service events for the tenant.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceEventResponse'
+
+  '/v2/org/{org}/carbide/tenant/{tenantId}/service-events/{id}':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+      - name: tenantId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Get service event
+      tags: [Health]
+      operationId: get-service-event
+      description: Returns a single tenant-facing service event. Infrastructure details are excluded.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceEventResponse'
+        '404':
+          description: Not found
+
+  # --- DPF HCP Provisioning endpoints ---
+  '/v2/org/{org}/carbide/sites/{siteId}/dpf-hcp':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+      - name: siteId
+        in: path
+        required: true
+        schema: { type: string }
+        description: Site ID
+    post:
+      summary: Provision DPF hosted control plane
+      tags: [DPF HCP]
+      operationId: provision-dpf-hcp
+      description: |-
+        Provisions a DPF hosted control plane for the given site. Creates a DPFHCPProvisioner
+        custom resource in the management cluster and starts a provisioning workflow.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DPFHCPRequest'
+      responses:
+        '201':
+          description: Provisioning record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisioningRecord'
+        '400':
+          description: Validation error
+        '409':
+          description: Provisioning already in progress for this site
+    get:
+      summary: Get DPF HCP status
+      tags: [DPF HCP]
+      operationId: get-dpf-hcp-status
+      description: Returns the provisioning status of the DPF hosted control plane for the given site.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisioningRecord'
+        '404':
+          description: Not found
+    delete:
+      summary: Delete DPF HCP
+      tags: [DPF HCP]
+      operationId: delete-dpf-hcp
+      description: Initiates teardown of the DPF hosted control plane for the given site.
+      responses:
+        '202':
+          description: Accepted — deletion initiated
+        '404':
+          description: Not found
+
   # --- Usage / Showback endpoints ---
+  '/v2/org/{org}/carbide/services/{id}/usage':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+        description: Service ID
+    get:
+      summary: Get service usage
+      tags: [Showback]
+      operationId: get-service-usage
+      description: Returns aggregated usage metrics for a specific provisioned service.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageSummary'
+        '400':
+          description: Invalid service ID
+
+  '/v2/org/{org}/carbide/self/usage':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+    get:
+      summary: Get tenant usage
+      tags: [Showback]
+      operationId: get-self-usage
+      description: Returns aggregated usage metrics for the authenticated tenant's current billing period.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageSummary'
+        '401':
+          description: Unauthorized — tenant_id not found in auth context
+
   '/v2/org/{org}/carbide/self/usage/costs':
     parameters:
-      - $ref: '#/components/parameters/orgParam'
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
     get:
       summary: Get usage with cost breakdown
       tags: [Showback]
@@ -12023,15 +12593,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UsageCostSummary'
+        '401':
+          description: Unauthorized — tenant_id not found in auth context
+
+  '/v2/org/{org}/carbide/self/quotas':
+    parameters:
+      - schema:
+          type: string
+        name: org
+        in: path
+        required: true
+        description: Name of the Org
+    get:
+      summary: Get tenant quotas
+      tags: [Showback]
+      operationId: get-self-quotas
+      description: Returns quota limits and current usage for the authenticated tenant.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotaInfo'
+        '401':
+          description: Unauthorized — tenant_id not found in auth context
 
 components:
-  parameters:
-    orgParam:
-      name: org
-      in: path
-      required: true
-      schema: { type: string }
-      description: Name of the Org
   schemas:
     # --- Catalog schemas ---
     Blueprint:
@@ -12199,6 +12787,40 @@ components:
           additionalProperties: {}
       required: [blueprint_id, tenant_id]
 
+    FulfillmentService:
+      type: object
+      description: A provisioned tenant environment with its associated resources.
+      properties:
+        id: { type: string, format: uuid }
+        order_id: { type: string, format: uuid }
+        blueprint_id: { type: string, format: uuid }
+        blueprint_name: { type: string }
+        tenant_id: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string, enum: [Provisioning, Active, Updating, Terminating, Terminated] }
+        resources:
+          type: object
+          additionalProperties: { type: string }
+        created: { type: string, format: date-time }
+        updated: { type: string, format: date-time }
+
+    FulfillmentServiceListResponse:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/FulfillmentService' } }
+        total: { type: integer }
+        offset: { type: integer }
+        limit: { type: integer }
+
+    UpdateServiceRequest:
+      type: object
+      description: Request body for updating a provisioned service.
+      properties:
+        name: { type: string }
+        resources:
+          type: object
+          additionalProperties: { type: string }
+
     # --- Showback schemas ---
     UsageCostSummary:
       type: object
@@ -12222,6 +12844,214 @@ components:
         rate: { type: number }
         unit: { type: string }
         cost: { type: number }
+
+    UsageSummary:
+      type: object
+      description: Aggregated usage metrics for a tenant or service over a period.
+      properties:
+        tenant_id: { type: string, format: uuid }
+        period: { type: string, description: 'Billing period (e.g., "current-month", "last-30d")' }
+        metrics:
+          type: object
+          description: 'Metric name to aggregated value (e.g., "gpu-hours": 1234.5)'
+          additionalProperties: { type: number }
+
+    QuotaInfo:
+      type: object
+      description: Quota limits and current usage for a tenant.
+      properties:
+        tenant_id: { type: string, format: uuid }
+        quotas:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/QuotaLimit'
+
+    QuotaLimit:
+      type: object
+      description: A single quota with its limit and current usage.
+      properties:
+        limit: { type: number }
+        current: { type: number }
+        unit: { type: string }
+
+    # --- Capabilities schemas ---
+    CapabilitiesResponse:
+      type: object
+      description: Feature capability status for the deployment.
+      properties:
+        features:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FeatureStatus'
+
+    FeatureStatus:
+      type: object
+      description: Runtime status of a single feature.
+      properties:
+        status: { type: string, enum: [available, not_available] }
+        provider: { type: string, description: Provider name (set when available) }
+        version: { type: string, description: Provider version (set when available) }
+
+    # --- Health schemas ---
+    FaultEvent:
+      type: object
+      description: An infrastructure fault tracked through its full lifecycle.
+      properties:
+        id: { type: string, format: uuid }
+        org_id: { type: string }
+        tenant_id: { type: string, format: uuid }
+        site_id: { type: string }
+        machine_id: { type: string }
+        instance_id: { type: string }
+        source: { type: string }
+        severity: { type: string, enum: [critical, warning, info] }
+        component: { type: string, enum: [gpu, nvswitch, network, storage, power, cooling, memory, cpu, bmc] }
+        classification: { type: string }
+        message: { type: string }
+        state: { type: string, enum: [open, acknowledged, remediating, resolved, escalated, suppressed] }
+        detected_at: { type: string, format: date-time }
+        acknowledged_at: { type: string, format: date-time }
+        resolved_at: { type: string, format: date-time }
+        suppressed_until: { type: string, format: date-time }
+        remediation_workflow_id: { type: string }
+        remediation_attempts: { type: integer }
+        escalation_level: { type: integer }
+        metadata:
+          type: object
+          additionalProperties: {}
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    FaultIngestionRequest:
+      type: object
+      description: Webhook payload for fault ingestion from external monitoring systems.
+      properties:
+        source: { type: string }
+        severity: { type: string, enum: [critical, warning, info] }
+        component: { type: string, enum: [gpu, nvswitch, network, storage, power, cooling, memory, cpu, bmc] }
+        classification: { type: string }
+        message: { type: string }
+        machine_id: { type: string }
+        detected_at: { type: string, format: date-time }
+        metadata:
+          type: object
+          additionalProperties: {}
+      required: [source, severity, component, message]
+
+    UpdateFaultEventRequest:
+      type: object
+      description: Request body for updating a fault event (acknowledge, suppress, resolve).
+      properties:
+        state: { type: string, enum: [acknowledged, suppressed, resolved, escalated] }
+        suppressed_until: { type: string, format: date-time }
+        metadata:
+          type: object
+          additionalProperties: {}
+
+    FaultSummary:
+      type: object
+      description: Aggregated fault counts by severity, component, state, and site.
+      properties:
+        by_severity:
+          type: object
+          additionalProperties: { type: integer }
+        by_component:
+          type: object
+          additionalProperties: { type: integer }
+        by_state:
+          type: object
+          additionalProperties: { type: integer }
+        by_site:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteFaultSummary'
+
+    SiteFaultSummary:
+      type: object
+      description: Per-site fault counts.
+      properties:
+        site_id: { type: string }
+        open: { type: integer }
+        critical: { type: integer }
+
+    ServiceEventResponse:
+      type: object
+      description: |-
+        Tenant-safe view of a service disruption. No infrastructure details
+        (machine IDs, rack locations, classifications) are exposed.
+      properties:
+        id: { type: string, format: uuid }
+        summary: { type: string }
+        impact: { type: string }
+        state: { type: string }
+        started_at: { type: string, format: date-time }
+        estimated_resolution_at: { type: string, format: date-time }
+        resolved_at: { type: string, format: date-time }
+        downtime_excluded: { type: boolean }
+
+    # --- DPF HCP schemas ---
+    DPFHCPRequest:
+      type: object
+      description: Request body for provisioning a DPF hosted control plane.
+      properties:
+        dpuClusterRef:
+          $ref: '#/components/schemas/DPUClusterReference'
+        baseDomain: { type: string }
+        ocpReleaseImage: { type: string }
+        sshKeySecretRef: { type: string }
+        pullSecretRef: { type: string }
+        controlPlaneAvailabilityPolicy: { type: string }
+        virtualIP: { type: string }
+        etcdStorageClass: { type: string }
+        flannelEnabled: { type: boolean }
+        dpuDeploymentRef:
+          $ref: '#/components/schemas/DPUDeploymentReference'
+        machineOSURL: { type: string }
+      required: [dpuClusterRef, baseDomain, ocpReleaseImage, sshKeySecretRef, pullSecretRef]
+
+    DPUClusterReference:
+      type: object
+      description: Identifies a DPU cluster by name and namespace.
+      properties:
+        name: { type: string }
+        namespace: { type: string }
+      required: [name, namespace]
+
+    DPUDeploymentReference:
+      type: object
+      description: Identifies a DPU deployment by name and namespace.
+      properties:
+        name: { type: string }
+        namespace: { type: string }
+
+    ProvisioningRecord:
+      type: object
+      description: Tracks the state of a DPF HCP provisioning request for a site.
+      properties:
+        siteId: { type: string }
+        config:
+          $ref: '#/components/schemas/DPFHCPRequest'
+        status: { type: string, enum: [Pending, Provisioning, Ready, Failed, Deleting] }
+        phase: { type: string }
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusCondition'
+        workflowId: { type: string }
+        crName: { type: string }
+        crNamespace: { type: string }
+        created: { type: string, format: date-time }
+        updated: { type: string, format: date-time }
+
+    StatusCondition:
+      type: object
+      description: A Kubernetes-style status condition.
+      properties:
+        type: { type: string }
+        status: { type: string }
+        reason: { type: string }
+        message: { type: string }
+        lastTransitionTime: { type: string }
 
     # --- Existing schemas ---
     InfrastructureProvider:
@@ -12405,6 +13235,10 @@ components:
           type: boolean
           format: uuid
           description: Indicates whether Tenant can create Instances by specifying Machine ID
+          readOnly: true
+        faultManagement:
+          type: boolean
+          description: Indicates whether tenant-facing service events are available for this tenant
           readOnly: true
     TenantStats:
       title: TenantStats
@@ -12833,6 +13667,9 @@ components:
           type: boolean
         imageBasedOperatingSystem:
           type: boolean
+        faultManagement:
+          type: boolean
+          description: Indicates whether fault event management (ingestion, remediation, service events) is enabled for this site
     SiteMachineStats:
       title: SiteMachineStats
       type: object

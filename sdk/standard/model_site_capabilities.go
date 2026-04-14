@@ -24,6 +24,8 @@ type SiteCapabilities struct {
 	NvLinkPartition           *bool `json:"nvLinkPartition,omitempty"`
 	RackLevelAdministration   *bool `json:"rackLevelAdministration,omitempty"`
 	ImageBasedOperatingSystem *bool `json:"imageBasedOperatingSystem,omitempty"`
+	// Indicates whether fault event management (ingestion, remediation, service events) is enabled for this site
+	FaultManagement *bool `json:"faultManagement,omitempty"`
 }
 
 // NewSiteCapabilities instantiates a new SiteCapabilities object
@@ -203,6 +205,38 @@ func (o *SiteCapabilities) SetImageBasedOperatingSystem(v bool) {
 	o.ImageBasedOperatingSystem = &v
 }
 
+// GetFaultManagement returns the FaultManagement field value if set, zero value otherwise.
+func (o *SiteCapabilities) GetFaultManagement() bool {
+	if o == nil || IsNil(o.FaultManagement) {
+		var ret bool
+		return ret
+	}
+	return *o.FaultManagement
+}
+
+// GetFaultManagementOk returns a tuple with the FaultManagement field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *SiteCapabilities) GetFaultManagementOk() (*bool, bool) {
+	if o == nil || IsNil(o.FaultManagement) {
+		return nil, false
+	}
+	return o.FaultManagement, true
+}
+
+// HasFaultManagement returns a boolean if a field has been set.
+func (o *SiteCapabilities) HasFaultManagement() bool {
+	if o != nil && !IsNil(o.FaultManagement) {
+		return true
+	}
+
+	return false
+}
+
+// SetFaultManagement gets a reference to the given bool and assigns it to the FaultManagement field.
+func (o *SiteCapabilities) SetFaultManagement(v bool) {
+	o.FaultManagement = &v
+}
+
 func (o SiteCapabilities) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -227,6 +261,9 @@ func (o SiteCapabilities) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.ImageBasedOperatingSystem) {
 		toSerialize["imageBasedOperatingSystem"] = o.ImageBasedOperatingSystem
+	}
+	if !IsNil(o.FaultManagement) {
+		toSerialize["faultManagement"] = o.FaultManagement
 	}
 	return toSerialize, nil
 }

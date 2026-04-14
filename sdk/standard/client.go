@@ -52,6 +52,10 @@ type APIClient struct {
 
 	AuditAPI *AuditAPIService
 
+	CatalogAPI *CatalogAPIService
+
+	DPFHCPAPI *DPFHCPAPIService
+
 	DPUExtensionServiceAPI *DPUExtensionServiceAPIService
 
 	ExpectedMachineAPI *ExpectedMachineAPIService
@@ -59,6 +63,10 @@ type APIClient struct {
 	ExpectedPowerShelfAPI *ExpectedPowerShelfAPIService
 
 	ExpectedSwitchAPI *ExpectedSwitchAPIService
+
+	FulfillmentAPI *FulfillmentAPIService
+
+	HealthAPI *HealthAPIService
 
 	IPBlockAPI *IPBlockAPIService
 
@@ -89,6 +97,8 @@ type APIClient struct {
 	SSHKeyGroupAPI *SSHKeyGroupAPIService
 
 	ServiceAccountAPI *ServiceAccountAPIService
+
+	ShowbackAPI *ShowbackAPIService
 
 	SiteAPI *SiteAPIService
 
@@ -127,10 +137,14 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	// API Services
 	c.AllocationAPI = (*AllocationAPIService)(&c.common)
 	c.AuditAPI = (*AuditAPIService)(&c.common)
+	c.CatalogAPI = (*CatalogAPIService)(&c.common)
+	c.DPFHCPAPI = (*DPFHCPAPIService)(&c.common)
 	c.DPUExtensionServiceAPI = (*DPUExtensionServiceAPIService)(&c.common)
 	c.ExpectedMachineAPI = (*ExpectedMachineAPIService)(&c.common)
 	c.ExpectedPowerShelfAPI = (*ExpectedPowerShelfAPIService)(&c.common)
 	c.ExpectedSwitchAPI = (*ExpectedSwitchAPIService)(&c.common)
+	c.FulfillmentAPI = (*FulfillmentAPIService)(&c.common)
+	c.HealthAPI = (*HealthAPIService)(&c.common)
 	c.IPBlockAPI = (*IPBlockAPIService)(&c.common)
 	c.InfiniBandPartitionAPI = (*InfiniBandPartitionAPIService)(&c.common)
 	c.InfrastructureProviderAPI = (*InfrastructureProviderAPIService)(&c.common)
@@ -146,6 +160,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.SSHKeyAPI = (*SSHKeyAPIService)(&c.common)
 	c.SSHKeyGroupAPI = (*SSHKeyGroupAPIService)(&c.common)
 	c.ServiceAccountAPI = (*ServiceAccountAPIService)(&c.common)
+	c.ShowbackAPI = (*ShowbackAPIService)(&c.common)
 	c.SiteAPI = (*SiteAPIService)(&c.common)
 	c.SubnetAPI = (*SubnetAPIService)(&c.common)
 	c.TenantAPI = (*TenantAPIService)(&c.common)
