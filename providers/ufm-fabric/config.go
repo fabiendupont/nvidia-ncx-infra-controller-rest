@@ -53,7 +53,7 @@ type ProviderConfig struct {
 func ConfigFromEnv() ProviderConfig {
 	cfg := ProviderConfig{
 		UFMURL:        os.Getenv("UFM_URL"),
-		UFMUsername:    os.Getenv("UFM_USERNAME"),
+		UFMUsername:   os.Getenv("UFM_USERNAME"),
 		UFMPassword:   os.Getenv("UFM_PASSWORD"),
 		TLSSkipVerify: envBool("UFM_TLS_SKIP_VERIFY"),
 		Features: FeatureConfig{

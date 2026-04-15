@@ -34,9 +34,9 @@ type testProvider struct {
 	initOrder    *[]string
 }
 
-func (p *testProvider) Name() string         { return p.name }
-func (p *testProvider) Version() string      { return p.version }
-func (p *testProvider) Features() []string   { return p.features }
+func (p *testProvider) Name() string           { return p.name }
+func (p *testProvider) Version() string        { return p.version }
+func (p *testProvider) Features() []string     { return p.features }
 func (p *testProvider) Dependencies() []string { return p.dependencies }
 func (p *testProvider) Init(_ ProviderContext) error {
 	if p.initOrder != nil {

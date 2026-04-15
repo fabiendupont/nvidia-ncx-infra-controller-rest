@@ -32,10 +32,10 @@ func TestFaultEventStore_CreateAndGetByID(t *testing.T) {
 
 	event := &FaultEvent{
 		Source:    "dcgm",
-		Severity: SeverityCritical,
+		Severity:  SeverityCritical,
 		Component: ComponentGPU,
-		Message:  "GPU ECC double-bit error",
-		SiteID:   "site-1",
+		Message:   "GPU ECC double-bit error",
+		SiteID:    "site-1",
 	}
 
 	err := store.Create(event)
@@ -63,10 +63,10 @@ func TestFaultEventStore_Update(t *testing.T) {
 
 	event := &FaultEvent{
 		Source:    "dcgm",
-		Severity: SeverityCritical,
+		Severity:  SeverityCritical,
 		Component: ComponentGPU,
-		Message:  "GPU fault",
-		SiteID:   "site-1",
+		Message:   "GPU fault",
+		SiteID:    "site-1",
 	}
 	require.NoError(t, store.Create(event))
 
@@ -88,10 +88,10 @@ func TestFaultEventStore_Delete(t *testing.T) {
 
 	event := &FaultEvent{
 		Source:    "test",
-		Severity: SeverityWarning,
+		Severity:  SeverityWarning,
 		Component: ComponentNetwork,
-		Message:  "link flap",
-		SiteID:   "site-1",
+		Message:   "link flap",
+		SiteID:    "site-1",
 	}
 	require.NoError(t, store.Create(event))
 

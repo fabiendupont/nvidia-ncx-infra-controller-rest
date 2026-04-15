@@ -215,8 +215,8 @@ func orderToDBModel(o *Order) *model.CatalogOrder {
 func dbModelToOrder(m *model.CatalogOrder) *Order {
 	return &Order{
 		ID:            m.ID,
-		BlueprintID:    m.BlueprintID,
-		BlueprintName:  m.BlueprintName,
+		BlueprintID:   m.BlueprintID,
+		BlueprintName: m.BlueprintName,
 		TenantID:      m.TenantID,
 		Parameters:    m.Parameters,
 		Status:        OrderStatus(m.Status),
@@ -245,15 +245,15 @@ func serviceToDBModel(s *Service) *model.CatalogService {
 
 func dbModelToService(m *model.CatalogService) *Service {
 	return &Service{
-		ID:           m.ID,
-		OrderID:      m.OrderID,
+		ID:            m.ID,
+		OrderID:       m.OrderID,
 		BlueprintID:   m.BlueprintID,
 		BlueprintName: m.BlueprintName,
-		TenantID:     m.TenantID,
-		Name:         m.Name,
-		Status:       ServiceStatus(m.Status),
-		Resources:    m.Resources,
-		Created:      m.Created,
-		Updated:      m.Updated,
+		TenantID:      m.TenantID,
+		Name:          m.Name,
+		Status:        ServiceStatus(m.Status),
+		Resources:     m.Resources,
+		Created:       m.Created,
+		Updated:       m.Updated,
 	}
 }

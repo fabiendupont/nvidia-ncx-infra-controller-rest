@@ -87,15 +87,15 @@ func (a *FulfillmentActivities) CreateService(ctx context.Context, order *Order)
 
 	now := time.Now()
 	service := &Service{
-		ID:           uuid.New(),
-		OrderID:      order.ID,
+		ID:            uuid.New(),
+		OrderID:       order.ID,
 		BlueprintID:   order.BlueprintID,
 		BlueprintName: order.BlueprintName,
-		TenantID:     order.TenantID,
-		Name:         fmt.Sprintf("svc-%s", order.ID),
-		Status:       ServiceStatusProvisioning,
-		Created:      now,
-		Updated:      now,
+		TenantID:      order.TenantID,
+		Name:          fmt.Sprintf("svc-%s", order.ID),
+		Status:        ServiceStatusProvisioning,
+		Created:       now,
+		Updated:       now,
 	}
 
 	if err := a.serviceStore.Create(service); err != nil {

@@ -26,9 +26,9 @@ import (
 
 func TestExtractPayloadField_MapStringInterface(t *testing.T) {
 	payload := map[string]interface{}{
-		"prefix":  "10.0.0.0/24",
-		"vpc_id":  "vpc-abc-123",
-		"name":    "my-subnet",
+		"prefix": "10.0.0.0/24",
+		"vpc_id": "vpc-abc-123",
+		"name":   "my-subnet",
 	}
 
 	prefix, err := extractPayloadField(payload, "prefix", "cidr")

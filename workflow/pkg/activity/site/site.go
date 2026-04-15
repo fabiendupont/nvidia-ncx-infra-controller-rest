@@ -37,8 +37,8 @@ import (
 	cdbp "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/paginator"
 	csm "github.com/NVIDIA/ncx-infra-controller-rest/site-manager/pkg/sitemgr"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/config"
 	sc "github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/client/site"
+	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/queue"
 	"github.com/NVIDIA/ncx-infra-controller-rest/workflow/pkg/util"
 

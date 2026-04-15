@@ -33,7 +33,7 @@ type Blueprint struct {
 	Parameters  map[string]standard.BlueprintParameter `json:"parameters,omitempty"`
 	Resources   map[string]standard.BlueprintResource  `json:"resources,omitempty"`
 	Labels      map[string]string                      `json:"labels,omitempty"`
-	Pricing     *standard.PricingSpec                   `json:"pricing,omitempty"`
+	Pricing     *standard.PricingSpec                  `json:"pricing,omitempty"`
 	TenantID    *string                                `json:"tenant_id,omitempty"`
 	Visibility  string                                 `json:"visibility"`
 	BasedOn     string                                 `json:"based_on,omitempty"`
@@ -50,7 +50,7 @@ type BlueprintCreateRequest struct {
 	Parameters  map[string]standard.BlueprintParameter `json:"parameters,omitempty"`
 	Resources   map[string]standard.BlueprintResource  `json:"resources,omitempty"`
 	Labels      map[string]string                      `json:"labels,omitempty"`
-	Pricing     *standard.PricingSpec                   `json:"pricing,omitempty"`
+	Pricing     *standard.PricingSpec                  `json:"pricing,omitempty"`
 	Visibility  string                                 `json:"visibility,omitempty"`
 	BasedOn     string                                 `json:"based_on,omitempty"`
 }
@@ -63,7 +63,7 @@ type BlueprintUpdateRequest struct {
 	Parameters  map[string]standard.BlueprintParameter `json:"parameters,omitempty"`
 	Resources   map[string]standard.BlueprintResource  `json:"resources,omitempty"`
 	Labels      map[string]string                      `json:"labels,omitempty"`
-	Pricing     *standard.PricingSpec                   `json:"pricing,omitempty"`
+	Pricing     *standard.PricingSpec                  `json:"pricing,omitempty"`
 	Visibility  string                                 `json:"visibility,omitempty"`
 }
 

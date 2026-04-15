@@ -31,8 +31,8 @@ import (
 type createOrderRequest struct {
 	BlueprintID   uuid.UUID              `json:"blueprint_id"`
 	BlueprintName string                 `json:"blueprint_name"`
-	TenantID     uuid.UUID              `json:"tenant_id"`
-	Parameters   map[string]interface{} `json:"parameters"`
+	TenantID      uuid.UUID              `json:"tenant_id"`
+	Parameters    map[string]interface{} `json:"parameters"`
 }
 
 // updateServiceRequest is the payload for updating a service.
@@ -89,14 +89,14 @@ func (h *OrderHandler) Create(c echo.Context) error {
 
 	now := time.Now().UTC()
 	order := &Order{
-		ID:           uuid.New(),
+		ID:            uuid.New(),
 		BlueprintID:   req.BlueprintID,
 		BlueprintName: req.BlueprintName,
-		TenantID:     req.TenantID,
-		Parameters:   req.Parameters,
-		Status:       OrderStatusPending,
-		Created:      now,
-		Updated:      now,
+		TenantID:      req.TenantID,
+		Parameters:    req.Parameters,
+		Status:        OrderStatusPending,
+		Created:       now,
+		Updated:       now,
 	}
 
 	if err := h.orders.Create(order); err != nil {

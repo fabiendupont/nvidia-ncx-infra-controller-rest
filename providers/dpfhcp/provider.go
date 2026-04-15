@@ -34,7 +34,6 @@ type DPFHCPProvider struct {
 	k8sClient     *DPFHCPClient
 }
 
-
 // DPFHCPActivities holds the dependencies needed by DPF HCP workflow activities.
 type DPFHCPActivities struct {
 	store  *ProvisioningStore

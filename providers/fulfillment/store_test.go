@@ -28,28 +28,28 @@ import (
 
 func newTestOrder() *Order {
 	return &Order{
-		ID:           uuid.New(),
+		ID:            uuid.New(),
 		BlueprintID:   uuid.New(),
 		BlueprintName: "test-template",
-		TenantID:     uuid.New(),
-		Parameters:   map[string]interface{}{"key": "value"},
-		Status:       OrderStatusPending,
-		Created:      time.Now().UTC(),
-		Updated:      time.Now().UTC(),
+		TenantID:      uuid.New(),
+		Parameters:    map[string]interface{}{"key": "value"},
+		Status:        OrderStatusPending,
+		Created:       time.Now().UTC(),
+		Updated:       time.Now().UTC(),
 	}
 }
 
 func newTestService(tenantID uuid.UUID) *Service {
 	return &Service{
-		ID:           uuid.New(),
-		OrderID:      uuid.New(),
+		ID:            uuid.New(),
+		OrderID:       uuid.New(),
 		BlueprintID:   uuid.New(),
 		BlueprintName: "test-template",
-		TenantID:     tenantID,
-		Name:         "test-service",
-		Status:       ServiceStatusProvisioning,
-		Created:      time.Now().UTC(),
-		Updated:      time.Now().UTC(),
+		TenantID:      tenantID,
+		Name:          "test-service",
+		Status:        ServiceStatusProvisioning,
+		Created:       time.Now().UTC(),
+		Updated:       time.Now().UTC(),
 	}
 }
 

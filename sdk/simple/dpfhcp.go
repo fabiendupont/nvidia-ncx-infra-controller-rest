@@ -47,15 +47,15 @@ type DPUDeploymentReference = standard.DPUDeploymentReference
 
 // DPFHCPProvisioningRecord tracks the state of a DPF HCP provisioning request.
 type DPFHCPProvisioningRecord struct {
-	SiteID      string            `json:"siteId"`
+	SiteID      string                 `json:"siteId"`
 	Config      DPFHCPProvisionRequest `json:"config"`
-	Status      string            `json:"status"`
-	Phase       string            `json:"phase,omitempty"`
-	WorkflowID  string            `json:"workflowId,omitempty"`
-	CRName      string            `json:"crName,omitempty"`
-	CRNamespace string            `json:"crNamespace,omitempty"`
-	Created     time.Time         `json:"created"`
-	Updated     time.Time         `json:"updated"`
+	Status      string                 `json:"status"`
+	Phase       string                 `json:"phase,omitempty"`
+	WorkflowID  string                 `json:"workflowId,omitempty"`
+	CRName      string                 `json:"crName,omitempty"`
+	CRNamespace string                 `json:"crNamespace,omitempty"`
+	Created     time.Time              `json:"created"`
+	Updated     time.Time              `json:"updated"`
 }
 
 // DPFHCPManager manages DPF HCP provisioning operations.

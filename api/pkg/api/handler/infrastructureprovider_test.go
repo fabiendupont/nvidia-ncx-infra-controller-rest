@@ -25,9 +25,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/handler/util/common"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/model"
+	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/common/pkg/otelecho"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"

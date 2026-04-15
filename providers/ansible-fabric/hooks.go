@@ -160,7 +160,7 @@ func (p *AnsibleFabricProvider) validateSubnetConfig(ctx context.Context, payloa
 		Msg("validating subnet config against physical fabric (AAP check mode)")
 
 	job, err := p.launchAndWait(ctx, p.config.Templates.CreateSubnet, map[string]interface{}{
-		"nico_vpc_id":       vpcID,
+		"nico_vpc_id":        vpcID,
 		"nico_subnet_prefix": prefix,
 		"ansible_check_mode": true,
 	})

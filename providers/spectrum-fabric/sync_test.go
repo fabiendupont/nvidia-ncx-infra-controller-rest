@@ -75,8 +75,8 @@ func newTestProvider(t *testing.T, handler http.HandlerFunc) (*SpectrumFabricPro
 	p := &SpectrumFabricProvider{
 		config: ProviderConfig{
 			NVUEURL:      srv.URL,
-			NVUEUsername:  "test",
-			NVUEPassword:  "test",
+			NVUEUsername: "test",
+			NVUEPassword: "test",
 			Features: FeatureConfig{
 				SyncVPC:    true,
 				SyncSubnet: true,

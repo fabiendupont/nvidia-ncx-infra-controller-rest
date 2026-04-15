@@ -46,8 +46,8 @@ import (
 
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api"
+	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/common/pkg/otelecho"
 	"github.com/NVIDIA/ncx-infra-controller-rest/provider"
 

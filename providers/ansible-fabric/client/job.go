@@ -74,14 +74,14 @@ type LaunchResponse struct {
 
 // Job represents the status of a running or completed AAP job.
 type Job struct {
-	ID         int       `json:"id"`
-	Name       string    `json:"name"`
-	Status     JobStatus `json:"status"`
-	Failed     bool      `json:"failed"`
-	Started    string    `json:"started"`
-	Finished   string    `json:"finished"`
-	Elapsed    float64   `json:"elapsed"`
-	ResultStdout string  `json:"result_stdout"`
+	ID           int       `json:"id"`
+	Name         string    `json:"name"`
+	Status       JobStatus `json:"status"`
+	Failed       bool      `json:"failed"`
+	Started      string    `json:"started"`
+	Finished     string    `json:"finished"`
+	Elapsed      float64   `json:"elapsed"`
+	ResultStdout string    `json:"result_stdout"`
 }
 
 // LaunchJobTemplate starts an AAP job template by ID, passing extra variables.

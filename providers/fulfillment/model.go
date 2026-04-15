@@ -37,8 +37,8 @@ const (
 // Order represents a request to provision a service from a catalog blueprint.
 type Order struct {
 	ID            uuid.UUID              `json:"id"`
-	BlueprintID    uuid.UUID              `json:"blueprint_id"`
-	BlueprintName  string                 `json:"blueprint_name"`
+	BlueprintID   uuid.UUID              `json:"blueprint_id"`
+	BlueprintName string                 `json:"blueprint_name"`
 	TenantID      uuid.UUID              `json:"tenant_id"`
 	Parameters    map[string]interface{} `json:"parameters"`
 	Status        OrderStatus            `json:"status"`
@@ -62,14 +62,14 @@ const (
 
 // Service represents a provisioned tenant environment with its associated resources.
 type Service struct {
-	ID           uuid.UUID         `json:"id"`
-	OrderID      uuid.UUID         `json:"order_id"`
+	ID            uuid.UUID         `json:"id"`
+	OrderID       uuid.UUID         `json:"order_id"`
 	BlueprintID   uuid.UUID         `json:"blueprint_id"`
 	BlueprintName string            `json:"blueprint_name"`
-	TenantID     uuid.UUID         `json:"tenant_id"`
-	Name         string            `json:"name"`
-	Status       ServiceStatus     `json:"status"`
-	Resources    map[string]string `json:"resources,omitempty"`
-	Created      time.Time         `json:"created"`
-	Updated      time.Time         `json:"updated"`
+	TenantID      uuid.UUID         `json:"tenant_id"`
+	Name          string            `json:"name"`
+	Status        ServiceStatus     `json:"status"`
+	Resources     map[string]string `json:"resources,omitempty"`
+	Created       time.Time         `json:"created"`
+	Updated       time.Time         `json:"updated"`
 }

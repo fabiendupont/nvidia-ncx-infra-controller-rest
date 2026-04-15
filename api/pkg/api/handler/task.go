@@ -29,10 +29,10 @@ import (
 	tClient "go.temporal.io/sdk/client"
 	tp "go.temporal.io/sdk/temporal"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/handler/util/common"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/model"
 	sc "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/client/site"
+	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	auth "github.com/NVIDIA/ncx-infra-controller-rest/auth/pkg/authorization"
 	cutil "github.com/NVIDIA/ncx-infra-controller-rest/common/pkg/util"
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"

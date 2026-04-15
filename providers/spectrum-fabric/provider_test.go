@@ -77,8 +77,8 @@ func TestProviderInit_Success(t *testing.T) {
 
 	p := New(ProviderConfig{
 		NVUEURL:      srv.URL,
-		NVUEUsername:  "admin",
-		NVUEPassword:  "admin",
+		NVUEUsername: "admin",
+		NVUEPassword: "admin",
 	})
 
 	ctx := provider.ProviderContext{
@@ -100,8 +100,8 @@ func TestProviderInit_ConnectivityFailure(t *testing.T) {
 
 	p := New(ProviderConfig{
 		NVUEURL:      srv.URL,
-		NVUEUsername:  "admin",
-		NVUEPassword:  "admin",
+		NVUEUsername: "admin",
+		NVUEPassword: "admin",
 	})
 
 	ctx := provider.ProviderContext{
@@ -122,8 +122,8 @@ func TestProviderInit_WithFeatures(t *testing.T) {
 
 	p := New(ProviderConfig{
 		NVUEURL:      srv.URL,
-		NVUEUsername:  "admin",
-		NVUEPassword:  "admin",
+		NVUEUsername: "admin",
+		NVUEPassword: "admin",
 		Features: FeatureConfig{
 			SyncVPC:    true,
 			SyncSubnet: true,

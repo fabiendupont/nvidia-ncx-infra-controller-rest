@@ -38,9 +38,9 @@ func New() *CatalogProvider {
 }
 
 func (p *CatalogProvider) Name() string           { return "nico-catalog" }
-func (p *CatalogProvider) Version() string         { return "0.1.0" }
-func (p *CatalogProvider) Features() []string      { return []string{"catalog"} }
-func (p *CatalogProvider) Dependencies() []string  { return []string{} }
+func (p *CatalogProvider) Version() string        { return "0.1.0" }
+func (p *CatalogProvider) Features() []string     { return []string{"catalog"} }
+func (p *CatalogProvider) Dependencies() []string { return []string{} }
 
 func (p *CatalogProvider) Init(ctx provider.ProviderContext) error {
 	p.apiPathPrefix = ctx.APIPathPrefix

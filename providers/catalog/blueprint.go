@@ -55,8 +55,8 @@ type BlueprintResource struct {
 // PricingSpec describes the cost of ordering and running a blueprint.
 type PricingSpec struct {
 	Rate            float64 `json:"rate" yaml:"rate"`
-	Unit            string  `json:"unit" yaml:"unit"`                                           // "hour", "month", "one-time"
-	Currency        string  `json:"currency" yaml:"currency"`                                   // ISO 4217 (e.g., "USD")
+	Unit            string  `json:"unit" yaml:"unit"`                                             // "hour", "month", "one-time"
+	Currency        string  `json:"currency" yaml:"currency"`                                     // ISO 4217 (e.g., "USD")
 	BillingInterval *int    `json:"billing_interval,omitempty" yaml:"billing_interval,omitempty"` // seconds between billing ticks
 }
 

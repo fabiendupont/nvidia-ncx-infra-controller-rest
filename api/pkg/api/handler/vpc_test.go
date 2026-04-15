@@ -29,11 +29,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/handler/util/common"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/model"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/pagination"
 	sc "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/client/site"
+	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/common/pkg/otelecho"
 	sutil "github.com/NVIDIA/ncx-infra-controller-rest/common/pkg/util"
 	"github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"

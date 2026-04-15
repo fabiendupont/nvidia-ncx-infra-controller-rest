@@ -22,8 +22,8 @@ import (
 
 	tClient "go.temporal.io/sdk/client"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	apiHandler "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/handler"
+	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 )
 

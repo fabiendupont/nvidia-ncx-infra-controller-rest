@@ -48,6 +48,8 @@ COPY site-workflow/ ./site-workflow/
 COPY workflow-schema/ ./workflow-schema/
 COPY site-manager/ ./site-manager/
 COPY cert-manager/ ./cert-manager/
+COPY api/ ./api/
+COPY auth/ ./auth/
 COPY provider/ ./provider/
 COPY providers/ ./providers/
 COPY sdk/ ./sdk/

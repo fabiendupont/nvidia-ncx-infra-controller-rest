@@ -27,8 +27,8 @@ import (
 
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	capis "github.com/NVIDIA/ncx-infra-controller-rest/api/internal/server"
+	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 
 	sc "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/client/site"
 

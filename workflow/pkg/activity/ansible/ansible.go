@@ -58,10 +58,10 @@ type hookFirer interface {
 // It follows the same value-receiver pattern as ManageVpc, ManageInstance,
 // etc. Register it with w.RegisterActivity(&ansibleManager).
 type ManageAnsible struct {
-	aapClient       *client.Client
-	defaultTimeout  time.Duration
+	aapClient           *client.Client
+	defaultTimeout      time.Duration
 	defaultPollInterval time.Duration
-	hooks           hookFirer
+	hooks               hookFirer
 }
 
 // NewManageAnsible creates a new ManageAnsible activity with a pre-configured
@@ -74,8 +74,8 @@ func NewManageAnsible(aapClient *client.Client, defaultTimeout, defaultPollInter
 		defaultPollInterval = 5 * time.Second
 	}
 	return ManageAnsible{
-		aapClient:       aapClient,
-		defaultTimeout:  defaultTimeout,
+		aapClient:           aapClient,
+		defaultTimeout:      defaultTimeout,
 		defaultPollInterval: defaultPollInterval,
 	}
 }

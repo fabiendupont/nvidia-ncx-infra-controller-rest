@@ -23,8 +23,8 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"go.temporal.io/sdk/temporal"
-	"go.temporal.io/sdk/workflow"
 	tsdkWorker "go.temporal.io/sdk/worker"
+	"go.temporal.io/sdk/workflow"
 )
 
 // TaskQueue returns the Temporal task queue name for the health provider.

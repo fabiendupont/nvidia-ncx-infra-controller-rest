@@ -28,8 +28,8 @@ import (
 func TestValidate_Success(t *testing.T) {
 	cfg := ProviderConfig{
 		NVUEURL:      "https://spine01:8765",
-		NVUEUsername:  "admin",
-		NVUEPassword:  "password",
+		NVUEUsername: "admin",
+		NVUEPassword: "password",
 	}
 	err := cfg.Validate()
 	assert.NoError(t, err)
@@ -57,7 +57,7 @@ func TestValidate_MissingUsername(t *testing.T) {
 
 func TestValidate_MissingPassword(t *testing.T) {
 	cfg := ProviderConfig{
-		NVUEURL:     "https://spine01:8765",
+		NVUEURL:      "https://spine01:8765",
 		NVUEUsername: "admin",
 	}
 	err := cfg.Validate()

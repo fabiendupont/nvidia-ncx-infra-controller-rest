@@ -43,8 +43,8 @@ func TestValidateSubnetConfig_Success(t *testing.T) {
 	// Should have created a revision, patched, then deleted the revision.
 	reqs := state.getRequests()
 	require.True(t, len(reqs) >= 3)
-	assert.Equal(t, "POST", reqs[0].Method) // create revision
-	assert.Equal(t, "PATCH", reqs[1].Method) // patch validation probe
+	assert.Equal(t, "POST", reqs[0].Method)   // create revision
+	assert.Equal(t, "PATCH", reqs[1].Method)  // patch validation probe
 	assert.Equal(t, "DELETE", reqs[2].Method) // cleanup revision
 }
 

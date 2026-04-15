@@ -130,11 +130,11 @@ func loadDefaultClassifications() map[string]*ClassificationMapping {
 			EscalateMessage: "DPU unreachable after BMC reset — may need BFB re-flash",
 		},
 		"dpu-hbn-down": {
-			Classification:  "dpu-hbn-down",
-			Component:       ComponentNetwork,
-			Severity:        SeverityCritical,
-			Remediation:     "dpu-hbn-restart",
-			MaxRetries:      2,
+			Classification: "dpu-hbn-down",
+			Component:      ComponentNetwork,
+			Severity:       SeverityCritical,
+			Remediation:    "dpu-hbn-restart",
+			MaxRetries:     2,
 		},
 
 		// BMC faults

@@ -79,9 +79,9 @@ func (p *AnsibleFabricProvider) launchAndWait(ctx context.Context, templateID in
 //
 // The playbook is expected to use the nvidia.nvue collection:
 //
-//	- nvidia.nvue.vrf: create VRF "nico-{{ nico_vpc_id }}"
-//	- nvidia.nvue.router: configure BGP for the VRF
-//	- nvidia.nvue.evpn: advertise VRF via EVPN (if configured)
+//   - nvidia.nvue.vrf: create VRF "nico-{{ nico_vpc_id }}"
+//   - nvidia.nvue.router: configure BGP for the VRF
+//   - nvidia.nvue.evpn: advertise VRF via EVPN (if configured)
 func (p *AnsibleFabricProvider) SyncVPCToFabric(ctx context.Context, vpcID, vpcName, tenantID string) error {
 	logger := log.With().Str("provider", p.Name()).Str("vpc_id", vpcID).Logger()
 
@@ -93,8 +93,8 @@ func (p *AnsibleFabricProvider) SyncVPCToFabric(ctx context.Context, vpcID, vpcN
 	logger.Info().Msg("syncing VPC to physical fabric via AAP")
 
 	job, err := p.launchAndWait(ctx, p.config.Templates.CreateVPC, map[string]interface{}{
-		"nico_vpc_id":   vpcID,
-		"nico_vpc_name": vpcName,
+		"nico_vpc_id":    vpcID,
+		"nico_vpc_name":  vpcName,
 		"nico_tenant_id": tenantID,
 	})
 	if err != nil {
@@ -115,7 +115,7 @@ func (p *AnsibleFabricProvider) SyncVPCToFabric(ctx context.Context, vpcID, vpcN
 //
 // The playbook is expected to:
 //
-//	- nvidia.nvue.vrf: delete VRF "nico-{{ nico_vpc_id }}" (state: absent)
+//   - nvidia.nvue.vrf: delete VRF "nico-{{ nico_vpc_id }}" (state: absent)
 func (p *AnsibleFabricProvider) RemoveVPCFromFabric(ctx context.Context, vpcID string) error {
 	logger := log.With().Str("provider", p.Name()).Str("vpc_id", vpcID).Logger()
 
@@ -147,10 +147,10 @@ func (p *AnsibleFabricProvider) RemoveVPCFromFabric(ctx context.Context, vpcID s
 //
 // The playbook is expected to use the nvidia.nvue collection:
 //
-//	- nvidia.nvue.vxlan: create VNI for subnet
-//	- nvidia.nvue.bridge: add VNET to bridge domain
-//	- nvidia.nvue.evpn: advertise VNI via BGP EVPN
-//	- nvidia.nvue.interface: configure gateway IP on SVI
+//   - nvidia.nvue.vxlan: create VNI for subnet
+//   - nvidia.nvue.bridge: add VNET to bridge domain
+//   - nvidia.nvue.evpn: advertise VNI via BGP EVPN
+//   - nvidia.nvue.interface: configure gateway IP on SVI
 func (p *AnsibleFabricProvider) SyncSubnetToFabric(ctx context.Context, subnetID, vpcID, prefix, subnetName string) error {
 	logger := log.With().Str("provider", p.Name()).Str("subnet_id", subnetID).Str("vpc_id", vpcID).Logger()
 
@@ -185,8 +185,8 @@ func (p *AnsibleFabricProvider) SyncSubnetToFabric(ctx context.Context, subnetID
 //
 // The playbook is expected to:
 //
-//	- nvidia.nvue.vxlan: remove VNI (state: absent)
-//	- nvidia.nvue.bridge: remove VNET from bridge domain
+//   - nvidia.nvue.vxlan: remove VNI (state: absent)
+//   - nvidia.nvue.bridge: remove VNET from bridge domain
 func (p *AnsibleFabricProvider) RemoveSubnetFromFabric(ctx context.Context, subnetID, vpcID string) error {
 	logger := log.With().Str("provider", p.Name()).Str("subnet_id", subnetID).Logger()
 
@@ -220,8 +220,8 @@ func (p *AnsibleFabricProvider) RemoveSubnetFromFabric(ctx context.Context, subn
 //
 // The playbook is expected to use the nvidia.nvue collection:
 //
-//	- nvidia.nvue.interface: set MTU, admin state "up"
-//	- nvidia.nvue.bridge: add port to VNET bridge domain
+//   - nvidia.nvue.interface: set MTU, admin state "up"
+//   - nvidia.nvue.bridge: add port to VNET bridge domain
 func (p *AnsibleFabricProvider) ConfigureInstancePorts(ctx context.Context, instanceID, machineID, vpcID, subnetID string) error {
 	logger := log.With().Str("provider", p.Name()).Str("instance_id", instanceID).Logger()
 
@@ -285,8 +285,8 @@ func (p *AnsibleFabricProvider) DeconfigureInstancePorts(ctx context.Context, in
 //
 // The playbook is expected to use ansible.builtin.uri to call UFM REST API:
 //
-//	- POST /ufmRestV2/plugin/fast_api/resources/pkeys: create PKEY
-//	- Configure GUID membership for the partition
+//   - POST /ufmRestV2/plugin/fast_api/resources/pkeys: create PKEY
+//   - Configure GUID membership for the partition
 func (p *AnsibleFabricProvider) SyncIBPartitionToFabric(ctx context.Context, partitionID, partitionName, pkey, tenantID string, guids []string) error {
 	logger := log.With().Str("provider", p.Name()).Str("partition_id", partitionID).Logger()
 
@@ -326,7 +326,7 @@ func (p *AnsibleFabricProvider) SyncIBPartitionToFabric(ctx context.Context, par
 //
 // The playbook is expected to use ansible.builtin.uri to call UFM REST API:
 //
-//	- DELETE /ufmRestV2/plugin/fast_api/resources/pkeys/<pkey>/delete
+//   - DELETE /ufmRestV2/plugin/fast_api/resources/pkeys/<pkey>/delete
 func (p *AnsibleFabricProvider) RemoveIBPartitionFromFabric(ctx context.Context, partitionID, pkey string) error {
 	logger := log.With().Str("provider", p.Name()).Str("partition_id", partitionID).Logger()
 

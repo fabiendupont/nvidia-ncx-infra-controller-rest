@@ -44,12 +44,12 @@ type UsageSummary struct {
 
 // UsageCostSummary extends UsageSummary with cost breakdown.
 type UsageCostSummary struct {
-	TenantID  uuid.UUID              `json:"tenant_id"`
-	Period    string                 `json:"period"`
-	Metrics   map[string]float64     `json:"metrics"`
-	Costs     map[string]CostDetail  `json:"costs"`
-	TotalCost float64                `json:"total_cost"`
-	Currency  string                 `json:"currency"`
+	TenantID  uuid.UUID             `json:"tenant_id"`
+	Period    string                `json:"period"`
+	Metrics   map[string]float64    `json:"metrics"`
+	Costs     map[string]CostDetail `json:"costs"`
+	TotalCost float64               `json:"total_cost"`
+	Currency  string                `json:"currency"`
 }
 
 // CostDetail shows the cost for a single metric.
@@ -62,7 +62,7 @@ type CostDetail struct {
 
 // QuotaInfo reports quota limits and current usage for a tenant.
 type QuotaInfo struct {
-	TenantID uuid.UUID            `json:"tenant_id"`
+	TenantID uuid.UUID             `json:"tenant_id"`
 	Quotas   map[string]QuotaLimit `json:"quotas"`
 }
 

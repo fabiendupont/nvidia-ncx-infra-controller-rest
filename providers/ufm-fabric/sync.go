@@ -146,8 +146,8 @@ func (p *UFMFabricProvider) AddGUIDsToPartition(ctx context.Context, pkey string
 
 	err := p.client.AddGUIDsToPKey(ctx, &ufmclient.PKeyAddGUIDsRequest{
 		PKey:       pkey,
-		GUIDs:     guids,
-		IPOverIB:  true,
+		GUIDs:      guids,
+		IPOverIB:   true,
 		Membership: membership,
 	})
 	if err != nil {
@@ -201,7 +201,7 @@ func (p *UFMFabricProvider) AddHostsToPartition(ctx context.Context, pkey string
 	job, err := p.client.AddHostsToPKey(ctx, &ufmclient.PKeyAddHostsRequest{
 		PKey:       pkey,
 		HostsNames: strings.Join(hosts, ","),
-		IPOverIB:  true,
+		IPOverIB:   true,
 		Membership: "full",
 	})
 	if err != nil {

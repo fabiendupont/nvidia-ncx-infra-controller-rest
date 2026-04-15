@@ -28,10 +28,10 @@ import (
 
 	"github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/paginator"
 
-	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/handler/util/common"
 	_ "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/api/model"
 	sc "github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/client/site"
+	"github.com/NVIDIA/ncx-infra-controller-rest/api/pkg/config"
 	cconfig "github.com/NVIDIA/ncx-infra-controller-rest/common/pkg/config"
 	cdb "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db"
 	cdbm "github.com/NVIDIA/ncx-infra-controller-rest/db/pkg/db/model"

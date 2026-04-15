@@ -66,9 +66,9 @@ func (p *SpectrumFabricProvider) SyncVPCToFabric(ctx context.Context, vpcID, vpc
 				"router-id": "auto",
 				"address-family": map[string]any{
 					"ipv4-unicast": map[string]any{
-						"enable":        "on",
-						"redistribute":  map[string]any{"connected": map[string]any{"enable": "on"}},
-						"route-export":  map[string]any{"to-evpn": map[string]any{"enable": "on"}},
+						"enable":       "on",
+						"redistribute": map[string]any{"connected": map[string]any{"enable": "on"}},
+						"route-export": map[string]any{"to-evpn": map[string]any{"enable": "on"}},
 					},
 					"l2vpn-evpn": map[string]any{
 						"enable": "on",
@@ -190,7 +190,7 @@ func (p *SpectrumFabricProvider) SyncSubnetToFabric(ctx context.Context, subnetI
 				"vni": map[string]any{
 					fmt.Sprintf("%d", vni): map[string]any{
 						"flooding": map[string]any{
-							"enable":            "on",
+							"enable":               "on",
 							"head-end-replication": map[string]any{},
 						},
 					},

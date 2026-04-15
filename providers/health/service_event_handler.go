@@ -30,8 +30,8 @@ import (
 // and the stores they depend on. Responses deliberately omit machine IDs,
 // rack locations, classifications, and remediation details.
 type ServiceEventHandler struct {
-	serviceEventStore   *ServiceEventStore
-	faultServiceStore   *FaultServiceEventStore
+	serviceEventStore *ServiceEventStore
+	faultServiceStore *FaultServiceEventStore
 }
 
 // NewServiceEventHandler creates a ServiceEventHandler with the given stores.

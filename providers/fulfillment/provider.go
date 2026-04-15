@@ -45,8 +45,8 @@ func New() *FulfillmentProvider {
 }
 
 func (p *FulfillmentProvider) Name() string       { return "nico-fulfillment" }
-func (p *FulfillmentProvider) Version() string     { return "0.1.0" }
-func (p *FulfillmentProvider) Features() []string  { return []string{"fulfillment"} }
+func (p *FulfillmentProvider) Version() string    { return "0.1.0" }
+func (p *FulfillmentProvider) Features() []string { return []string{"fulfillment"} }
 func (p *FulfillmentProvider) Dependencies() []string {
 	return []string{"nico-networking", "nico-compute", "nico-catalog"}
 }
