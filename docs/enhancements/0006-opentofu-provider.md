@@ -3,10 +3,11 @@
 | Field | Value |
 |-------|-------|
 | **Title** | NICo OpenTofu/Terraform Provider |
-| **Status** | Proposal |
+| **Status** | Implemented (Phase 1) |
 | **Authors** | Red Hat NCP Team |
 | **Created** | 2026-04-07 |
 | **Target Release** | TBD |
+| **Repository** | [github.com/fabiendupont/terraform-provider-nico](https://github.com/fabiendupont/terraform-provider-nico) |
 | **Depends on** | NEP-0001 (Extensible Architecture) |
 
 ## Summary
