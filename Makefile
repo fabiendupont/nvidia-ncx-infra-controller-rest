@@ -235,7 +235,7 @@ core-proto-clean:
 	rm -rf workflow-schema/site-agent/workflows/v1/*_nico.proto
 	rm -rf workflow-schema/schema/site-agent/workflows/v1/*.pb.go
 
-core-proto-repo ?= NVIDIA/ncx-infra-controller-core
+core-proto-repo ?= NVIDIA/infra-controller-core
 core-proto-repo-ssh:=ssh://git@github.com/$(core-proto-repo).git
 core-proto-ref ?= origin/main
 core-proto-fetch:
@@ -265,7 +265,7 @@ rla-proto:
 	for file in "$${RLA_DIR}"/proto/v1/*.proto; do \
 		cp "$$file" "workflow-schema/rla/proto/v1/"; \
 		echo "Copied: $$file"; \
-		./workflow-schema/scripts/add-go-package-option.sh "workflow-schema/rla/proto/v1/$$(basename "$$file")" "github.com/NVIDIA/ncx-infra-controller-rest/workflow-schema/rla"; \
+		./workflow-schema/scripts/add-go-package-option.sh "workflow-schema/rla/proto/v1/$$(basename "$$file")" "github.com/NVIDIA/infra-controller-rest/workflow-schema/rla"; \
 	done
 
 rla-protogen:
